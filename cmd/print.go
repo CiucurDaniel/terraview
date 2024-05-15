@@ -29,10 +29,20 @@ terrraview print /users/Mike/terraform/`,
 			fmt.Println("DEBUG: user wants to print from current path")
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
+			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
+			if err != nil {
+				fmt.Println(err)
+				fmt.Println("Error occurred generating image")
+			}
 		} else {
 			fmt.Println("DEBUG: user wants to print from other path")
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
+			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
+			if err != nil {
+				fmt.Println(err)
+				fmt.Println("Error occurred generating image")
+			}
 		}
 	},
 }
