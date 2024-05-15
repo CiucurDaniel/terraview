@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/CiucurDaniel/terraview/internal/graph"
 
 	"github.com/spf13/cobra"
 )
@@ -25,9 +26,13 @@ terrraview print /users/Mike/terraform/`,
 
 		path := args[0]
 		if path == "." {
-			fmt.Println("user wants to print from current path")
+			fmt.Println("DEBUG: user wants to print from current path")
+			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
+			fmt.Println(futureDiagram)
 		} else {
-			fmt.Println("user wants to print from other path")
+			fmt.Println("DEBUG: user wants to print from other path")
+			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
+			fmt.Println(futureDiagram)
 		}
 	},
 }
