@@ -1,0 +1,25 @@
+digraph  {
+compound="true";
+newrank="true";
+"[root] azurerm_linux_virtual_machine.vm (expand)"->"[root] azurerm_network_interface.nic (expand)";
+"[root] azurerm_network_interface.nic (expand)"->"[root] azurerm_subnet.subnet (expand)";
+"[root] azurerm_resource_group.rg (expand)"->"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"]";
+"[root] azurerm_subnet.subnet (expand)"->"[root] azurerm_virtual_network.vnet (expand)";
+"[root] azurerm_virtual_network.vnet (expand)"->"[root] azurerm_resource_group.rg (expand)";
+"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)"->"[root] azurerm_linux_virtual_machine.vm (expand)";
+"[root] root"->"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)";
+subgraph "root" {
+"[root] azurerm_linux_virtual_machine.vm (expand)" [ image="azurerm_linux_virtual_machine.png", label="azurerm_linux_virtual_machine.vm", shape="box" ];
+"[root] azurerm_network_interface.nic (expand)" [ image="azurerm_network_interface.png", label="azurerm_network_interface.nic", shape="box" ];
+"[root] azurerm_resource_group.rg (expand)" [ image="internal\icons\azurerm\azurerm_resource_group.png", label="azurerm_resource_group.rg", shape="box" ];
+"[root] azurerm_subnet.subnet (expand)" [ image="internal\icons\azurerm\azurerm_subnet.png", label="azurerm_subnet.subnet", shape="box" ];
+"[root] azurerm_virtual_network.vnet (expand)" [ image="internal\icons\azurerm\azurerm_virtual_network.png", label="azurerm_virtual_network.vnet", shape="box" ];
+"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)";
+"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"]" [ image="internal\icons\azurerm\provider[\"registry.png", label="provider[\"registry.terraform.io/hashicorp/azure
+rm\"]", shape="diamond" ];
+        "[root] root";
+
+}
+;
+
+}
