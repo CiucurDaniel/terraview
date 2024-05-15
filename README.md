@@ -21,3 +21,9 @@ Add new command:
 ```bash
 cobra-cli add print  
 ```
+
+# Run code
+
+```bash
+go run main.go print .\terraform_example\ 
+```
