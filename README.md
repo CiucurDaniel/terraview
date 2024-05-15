@@ -26,4 +26,15 @@ cobra-cli add print
 
 ```bash
 go run main.go print .\terraform_example\ 
+
+dot -Tjpeg diagram.dot -o diagram.jpg
 ```
+
+
+# TODOS
+
+Issue with SVGs
+https://stackoverflow.com/questions/49819164/graphviz-nodes-of-svg-images-do-not-get-inserted-if-output-is-svg
+
+Separate labels from Image itself
+https://stackoverflow.com/questions/58832678/how-to-separate-picture-and-label-of-a-node-with-graphviz
