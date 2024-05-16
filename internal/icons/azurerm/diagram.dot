@@ -9,15 +9,15 @@ newrank="true";
 "[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)"->"[root] azurerm_linux_virtual_machine.vm (expand)";
 "[root] root"->"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)";
 subgraph "root" {
-"[root] azurerm_linux_virtual_machine.vm (expand)" [ image="azurerm_linux_virtual_machine.png", label="azurerm_linux_virtual_machine.vm", shape="box" ];
-"[root] azurerm_network_interface.nic (expand)" [ image="azurerm_network_interface.png", label="azurerm_network_interface.nic", shape="box" ];
-"[root] azurerm_resource_group.rg (expand)" [ image="internal\icons\azurerm\azurerm_resource_group.png", label="azurerm_resource_group.rg", shape="box" ];
-"[root] azurerm_subnet.subnet (expand)" [ image="internal\icons\azurerm\azurerm_subnet.png", label="azurerm_subnet.subnet", shape="box" ];
-"[root] azurerm_virtual_network.vnet (expand)" [ image="internal\icons\azurerm\azurerm_virtual_network.png", label="azurerm_virtual_network.vnet", shape="box" ];
-"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)";
-"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"]" [ image="internal\icons\azurerm\provider[\"registry.png", label="provider[\"registry.terraform.io/hashicorp/azure
-rm\"]", shape="diamond" ];
-        "[root] root";
+"[root] azurerm_linux_virtual_machine.vm (expand)" [ image="azurerm_linux_virtual_machine.png", label="azurerm_linux_virtual_machine.vm", labelloc="b", shape="bo
+x" ];
+"[root] azurerm_network_interface.nic (expand)" [ image="azurerm_network_interface.png", label="azurerm_network_interface.nic", labelloc="b", shape="box" ];
+"[root] azurerm_resource_group.rg (expand)" [ image="azurerm_resource_group.png", label="azurerm_resource_group.rg", labelloc="b", shape="box" ];
+"[root] azurerm_subnet.subnet (expand)" [ image="azurerm_subnet.png", label="azurerm_subnet.subnet", labelloc="b", shape="box" ];
+"[root] azurerm_virtual_network.vnet (expand)" [ image="azurerm_virtual_network.png", label="azurerm_virtual_network.vnet", labelloc="b", shape="box" ];
+"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"] (close)" [ labelloc="b" ];
+"[root] provider[\"registry.terraform.io/hashicorp/azurerm\"]" [ label="provider[\"registry.terraform.io/hashicorp/azurerm\"]", labelloc="b", shape="diamond" ];
+"[root] root" [ labelloc="b" ];
 
 }
 ;
