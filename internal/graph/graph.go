@@ -89,6 +89,9 @@ func AddImageLabel(graph *gographviz.Graph) {
 
 			// Set the image label attribute
 			node.Attrs["image"] = fmt.Sprintf(`"%s"`, imageLabel)
+
+			// Set shape to none so the icon is not surrounded by a box
+			node.Attrs["shape"] = `"none"`
 		}
 	}
 }
