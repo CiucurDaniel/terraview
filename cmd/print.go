@@ -28,24 +28,30 @@ terrraview print /users/Mike/terraform/`,
 		path := args[0]
 		if path == "." {
 			fmt.Println("DEBUG: user wants to print from current path")
-			config.LoadConfig(".")
+			err := config.LoadConfig("terraview.yaml")
+			if err != nil {
+				fmt.Println("DEBUG: Could not load config")
+			}
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
-			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
-			if err != nil {
-				fmt.Println(err)
-				fmt.Println("Error occurred generating image")
-			}
+			//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	fmt.Println("Error occurred generating image")
+			//}
 		} else {
 			fmt.Println("DEBUG: user wants to print from other path")
-			config.LoadConfig(".")
+			err := config.LoadConfig("terraview.yaml")
+			if err != nil {
+				fmt.Println("DEBUG: Could not load config")
+			}
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
-			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
-			if err != nil {
-				fmt.Println(err)
-				fmt.Println("Error occurred generating image")
-			}
+			//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
+			//if err != nil {
+			//	fmt.Println(err)
+			//	fmt.Println("Error occurred generating image")
+			//}
 		}
 	},
 }
