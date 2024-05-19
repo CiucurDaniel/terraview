@@ -3,7 +3,6 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/awalterschulze/gographviz"
 	"io/ioutil"
 	"os"
@@ -24,11 +23,11 @@ var KnownProviders = []string{"azurerm", "aws", "gcp"}
 
 // ObtainGraph invokes "terraform graph" command in the specified directory
 // and returns the graph data as a string.
-func ObtainGraph(dirPath string) (string, error) {
+func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 	// Get the absolute path of the directory
 	absDirPath, err := filepath.Abs(dirPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to get absolute path for directory: %v", err)
+		return nil, fmt.Errorf("failed to get absolute path for directory: %v", err)
 	}
 
 	// Execute "terraform graph" command in the specified directory
@@ -41,11 +40,34 @@ func ObtainGraph(dirPath string) (string, error) {
 
 	// Run the command
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("error running 'terraform graph' command in directory %s: %v", absDirPath, err)
+		return nil, fmt.Errorf("error running 'terraform graph' command in directory %s: %v", absDirPath, err)
 	}
 
-	// Return the graph data as a string
-	return out.String(), nil
+	// Get the graph data as a string
+	graphData := out.String()
+
+	// Parse string into AST
+	graphAst, err := gographviz.ParseString(graphData)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing Terraform graph data: %v", err)
+	}
+
+	// Create a new graph object
+	graph := gographviz.NewGraph()
+
+	// Analyze and populate the graph object
+	err = gographviz.Analyse(graphAst, graph)
+	if err != nil {
+		return nil, fmt.Errorf("error analyzing Terraform graph data: %v", err)
+	}
+
+	// Return the parsed graph
+	return graph, nil
+}
+
+// SetGraphGlobalImagePath sets the global image path for the graph.
+func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
+	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
 // IsResourceNode checks if the label represents a resource node based on the known provider prefixes.
@@ -57,11 +79,6 @@ func IsResourceNode(label string) bool {
 		}
 	}
 	return false
-}
-
-// SetGraphGlobalImagePath sets the global image path for the graph.
-func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
-	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
 // TODO: Needs fixing, currently it break the formatting because the added label is not correct
@@ -157,91 +174,59 @@ func SaveGraphAsJPEG(graph *gographviz.Graph, filePath string) error {
 // It obtains the graph data, adds image labels to nodes, and returns the modified graph.
 func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 
-	graphData, err := ObtainGraph(dirPath)
+	graph, err := ObtainGraph(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
 	}
 
-	graph, err := gographviz.Read([]byte(graphData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse graph data: %v", err)
-	}
-
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
+	ConvertNodesToSubgraphs(graph)
 	AddImageLabel(graph)
 	PositionLabelTo(graph, LABEL_LOCATION)
 
 	return graph, nil
 }
 
-// ConvertNodesToSubgraphs converts specified nodes into subgraphs.
-func ConvertNodesToSubgraphs(graph *gographviz.Graph) {
-	cfg := config.GetConfig()
-	if cfg == nil {
-		fmt.Println("No configuration loaded.")
-		return
-	}
+// Function to convert nodes to subgraphs
+func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
+
+	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group"}
+	var counter = 0
 
 	for _, node := range graph.Nodes.Nodes {
 		label := node.Attrs["label"]
 		label = strings.Trim(label, `"`)
-		parts := strings.Split(label, ".")
+		if IsResourceNode(label) {
+			parts := strings.Split(label, ".")
+			foundGroupingResource := contains(groupingLabels, parts[0])
+			if foundGroupingResource {
+				fmt.Println("Found grouping resource: " + parts[0])
+				counter++
 
-		if len(parts) < 2 {
-			continue
-		}
-
-		nodeType := parts[0]
-
-		if contains(cfg.GroupingElements, nodeType) {
-			// Create a subgraph for this node
-			subgraphName := fmt.Sprintf("cluster_%s", node.Name)
-			graph.AddSubGraph("G", subgraphName, nil)
-
-			// Customize the subgraph's appearance
-			for _, subgraph := range graph.SubGraphs.SubGraphs {
-				if subgraph.Name == subgraphName {
-					subgraph.Attrs.Add("style", "rounded")
-					subgraph.Attrs.Add("label", fmt.Sprintf("\"%s\"", label))
-					break
+				// do not add only the resource type, add the full name, so later we can add the node inside this subGraph
+				err := graph.AddSubGraph("root", "cluster_"+label, nil)
+				if err != nil {
+					fmt.Println("DEBUG: Got an error trying to add subgraph")
 				}
-			}
 
-			// Add the node to the subgraph
-			for _, subgraph := range graph.SubGraphs.Sorted() {
-				if subgraph.Name == subgraphName {
-					// Update subgraph label
-					subgraph.Attrs["label"] = fmt.Sprintf("\"%s\"", label)
-					// Customize the subgraph's appearance
-					subgraph.Attrs.Add("style", "filled")
-					subgraph.Attrs.Add("fillcolor", "lightgray")
-
-					// Construct the DOT representation of the node
-					nodeDOT := fmt.Sprintf(`"%s" [label="%s"]`, node.Name, node.Attrs["label"])
-
-					// Append the node DOT representation to the subgraph's DOT representation
-					subgraph.Attrs["statement"] += "\n" + nodeDOT
-
-					break
-				}
-			}
-
-			// Update edges to refer to the subgraph
-			for _, edge := range graph.Edges.Edges {
-				if edge.Src == node.Name {
-					edge.Src = subgraphName
-				}
-				if edge.Dst == node.Name {
-					edge.Dst = subgraphName
+				fmt.Println("Subgraph are:")
+				for _, s := range graph.SubGraphs.Sorted() {
+					fmt.Println(s)
 				}
 			}
 		}
 	}
+
+	fmt.Println("About to print the graph")
+	fmt.Println(graph.String())
+	fmt.Println("------------------------")
+
+	return nil
 }
 
-func contains(slice []string, item string) bool {
-	for _, elem := range slice {
-		if elem == item {
+func contains(arr []string, str string) bool {
+	for _, item := range arr {
+		if item == str {
 			return true
 		}
 	}
