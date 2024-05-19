@@ -179,10 +179,10 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
 	}
 
-	SetGraphGlobalImagePath(graph, GlobalImagePath)
+	//SetGraphGlobalImagePath(graph, GlobalImagePath)
 	ConvertNodesToSubgraphs(graph)
-	AddImageLabel(graph)
-	PositionLabelTo(graph, LABEL_LOCATION)
+	//AddImageLabel(graph)
+	//PositionLabelTo(graph, LABEL_LOCATION)
 
 	return graph, nil
 }
@@ -204,18 +204,21 @@ func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 				counter++
 
 				// do not add only the resource type, add the full name, so later we can add the node inside this subGraph
-				err := graph.AddSubGraph("root", "cluster_"+label, nil)
+				err := graph.AddSubGraph(`"root"`, "cluster_"+label, nil)
 				if err != nil {
 					fmt.Println("DEBUG: Got an error trying to add subgraph")
 				}
 
-				fmt.Println("Subgraph are:")
-				for _, s := range graph.SubGraphs.Sorted() {
-					fmt.Println(s)
-				}
 			}
 		}
 	}
+
+	graph.AddNode("cluster_azurerm_resource_group.rg", "A", nil)
+	fmt.Println("Subgraphs are:")
+	for _, s := range graph.SubGraphs.Sorted() {
+		fmt.Println(s.Name)
+	}
+	fmt.Println("------------------------")
 
 	fmt.Println("About to print the graph")
 	fmt.Println(graph.String())
