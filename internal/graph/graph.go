@@ -224,6 +224,9 @@ func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 	fmt.Println(graph.String())
 	fmt.Println("------------------------")
 
+	for _, edge := range graph.Edges.Sorted() {
+		fmt.Println("Edge: " + edge.Src + "--->" + edge.Dst)
+	}
 	return nil
 }
 
