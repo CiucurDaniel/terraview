@@ -116,21 +116,34 @@ func SaveGraphAsJPEG(graph *gographviz.Graph, filePath string) error {
 	// Render the graph to DOT format
 	dot := graph.String()
 
-	// Write the DOT string to a temporary file
-	tempFile, err := ioutil.TempFile("", "graphviz-*.dot")
+	// Create a temporary directory for the DOT file and the output image
+	tempDir, err := ioutil.TempDir("", "graphviz")
 	if err != nil {
-		return fmt.Errorf("error creating temporary file: %v", err)
+		return fmt.Errorf("error creating temporary directory: %v", err)
 	}
-	defer os.Remove(tempFile.Name()) // Clean up temporary file
-	if _, err := tempFile.WriteString(dot); err != nil {
+	defer os.RemoveAll(tempDir) // Clean up temporary directory
+
+	// Write the DOT string to a temporary file
+	tempFilePath := filepath.Join(tempDir, "graph.dot")
+	err = ioutil.WriteFile(tempFilePath, []byte(dot), 0644)
+	if err != nil {
 		return fmt.Errorf("error writing DOT to temporary file: %v", err)
 	}
 
-	// Convert DOT file to JPEG using Graphviz command-line tool
-	cmd := exec.Command("dot", "-Tjpg", tempFile.Name(), "-o", filePath)
-	err = cmd.Run()
+	// Ensure the output file path is absolute
+	outputFilePath, err := filepath.Abs(filePath)
 	if err != nil {
-		return fmt.Errorf("error converting DOT to JPEG: %v", err)
+		return fmt.Errorf("error getting absolute file path: %v", err)
+	}
+
+	// Convert DOT file to JPEG using Graphviz command-line tool
+	cmd := exec.Command("dot", "-Tjpg", tempFilePath, "-o", outputFilePath)
+	cmd.Dir = tempDir // Set the working directory to the temporary directory
+
+	// Capture standard output and standard error
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error converting DOT to JPEG: %v, output: %s", err, string(output))
 	}
 
 	return nil
