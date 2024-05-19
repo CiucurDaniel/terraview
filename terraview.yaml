@@ -1,0 +1,4 @@
+grouping_elements:
+  - azurerm_subnet
+  - azurerm_virtual_network
+  # Add more elements as needed

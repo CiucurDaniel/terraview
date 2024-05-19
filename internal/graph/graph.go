@@ -3,6 +3,7 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/awalterschulze/gographviz"
 	"io/ioutil"
 	"os"
@@ -171,4 +172,78 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	PositionLabelTo(graph, LABEL_LOCATION)
 
 	return graph, nil
+}
+
+// ConvertNodesToSubgraphs converts specified nodes into subgraphs.
+func ConvertNodesToSubgraphs(graph *gographviz.Graph) {
+	cfg := config.GetConfig()
+	if cfg == nil {
+		fmt.Println("No configuration loaded.")
+		return
+	}
+
+	for _, node := range graph.Nodes.Nodes {
+		label := node.Attrs["label"]
+		label = strings.Trim(label, `"`)
+		parts := strings.Split(label, ".")
+
+		if len(parts) < 2 {
+			continue
+		}
+
+		nodeType := parts[0]
+
+		if contains(cfg.GroupingElements, nodeType) {
+			// Create a subgraph for this node
+			subgraphName := fmt.Sprintf("cluster_%s", node.Name)
+			graph.AddSubGraph("G", subgraphName, nil)
+
+			// Customize the subgraph's appearance
+			for _, subgraph := range graph.SubGraphs.SubGraphs {
+				if subgraph.Name == subgraphName {
+					subgraph.Attrs.Add("style", "rounded")
+					subgraph.Attrs.Add("label", fmt.Sprintf("\"%s\"", label))
+					break
+				}
+			}
+
+			// Add the node to the subgraph
+			for _, subgraph := range graph.SubGraphs.Sorted() {
+				if subgraph.Name == subgraphName {
+					// Update subgraph label
+					subgraph.Attrs["label"] = fmt.Sprintf("\"%s\"", label)
+					// Customize the subgraph's appearance
+					subgraph.Attrs.Add("style", "filled")
+					subgraph.Attrs.Add("fillcolor", "lightgray")
+
+					// Construct the DOT representation of the node
+					nodeDOT := fmt.Sprintf(`"%s" [label="%s"]`, node.Name, node.Attrs["label"])
+
+					// Append the node DOT representation to the subgraph's DOT representation
+					subgraph.Attrs["statement"] += "\n" + nodeDOT
+
+					break
+				}
+			}
+
+			// Update edges to refer to the subgraph
+			for _, edge := range graph.Edges.Edges {
+				if edge.Src == node.Name {
+					edge.Src = subgraphName
+				}
+				if edge.Dst == node.Name {
+					edge.Dst = subgraphName
+				}
+			}
+		}
+	}
+}
+
+func contains(slice []string, item string) bool {
+	for _, elem := range slice {
+		if elem == item {
+			return true
+		}
+	}
+	return false
 }

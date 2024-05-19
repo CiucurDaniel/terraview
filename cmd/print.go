@@ -1,11 +1,12 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Daniel Ciucur ciucur.daniel14@gmail.com
 
 */
 package cmd
 
 import (
 	"fmt"
+	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/CiucurDaniel/terraview/internal/graph"
 
 	"github.com/spf13/cobra"
@@ -27,6 +28,7 @@ terrraview print /users/Mike/terraform/`,
 		path := args[0]
 		if path == "." {
 			fmt.Println("DEBUG: user wants to print from current path")
+			config.LoadConfig(".")
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
 			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
@@ -36,6 +38,7 @@ terrraview print /users/Mike/terraform/`,
 			}
 		} else {
 			fmt.Println("DEBUG: user wants to print from other path")
+			config.LoadConfig(".")
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
 			err := graph.SaveGraphAsJPEG(futureDiagram, ".")
