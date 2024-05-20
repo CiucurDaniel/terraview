@@ -3,12 +3,13 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"github.com/awalterschulze/gographviz"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/awalterschulze/gographviz"
 )
 
 const (
