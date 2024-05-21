@@ -26,37 +26,24 @@ terrraview print /users/Mike/terraform/`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		path := args[0]
-		if path == "." {
-			fmt.Println("DEBUG: user wants to print from current path")
-			err := config.LoadConfig("terraview.yaml")
-			if err != nil {
-				fmt.Println("ERROR: Could not load config")
-			}
-			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
-			fmt.Println(futureDiagram)
-			//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
-			//if err != nil {
-			//	fmt.Println(err)
-			//	fmt.Println("Error occurred generating image")
-			//}
-		} else {
-			fmt.Println("DEBUG: user wants to print from other path")
-			err := config.LoadConfig("terraview.yaml")
-			if err != nil {
-				fmt.Println("ERROR: Could not load config")
-			}
-			futureDiagram, err := graph.PrepareGraphForPrinting(path)
-			if err != nil {
-				fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
-			}
 
-			fmt.Println(futureDiagram)
-			//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
-			//if err != nil {
-			//	fmt.Println(err)
-			//	fmt.Println("Error occurred generating image")
-			//}
+		err := config.LoadConfig("terraview.yaml")
+		if err != nil {
+			fmt.Println(fmt.Errorf("ERROR: Could not load config: %v", err))
 		}
+
+		futureDiagram, err := graph.PrepareGraphForPrinting(path)
+		if err != nil {
+			fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
+		}
+
+		fmt.Println(futureDiagram)
+		//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
+		//if err != nil {
+		//	fmt.Println(err)
+		//	fmt.Println("Error occurred generating image")
+		//}
+
 	},
 }
 
