@@ -1,11 +1,11 @@
 /*
 Copyright © 2024 Daniel Ciucur ciucur.daniel14@gmail.com
-
 */
 package cmd
 
 import (
 	"fmt"
+
 	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/CiucurDaniel/terraview/internal/graph"
 
@@ -30,7 +30,7 @@ terrraview print /users/Mike/terraform/`,
 			fmt.Println("DEBUG: user wants to print from current path")
 			err := config.LoadConfig("terraview.yaml")
 			if err != nil {
-				fmt.Println("DEBUG: Could not load config")
+				fmt.Println("ERROR: Could not load config")
 			}
 			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
 			fmt.Println(futureDiagram)
@@ -43,9 +43,13 @@ terrraview print /users/Mike/terraform/`,
 			fmt.Println("DEBUG: user wants to print from other path")
 			err := config.LoadConfig("terraview.yaml")
 			if err != nil {
-				fmt.Println("DEBUG: Could not load config")
+				fmt.Println("ERROR: Could not load config")
 			}
-			futureDiagram, _ := graph.PrepareGraphForPrinting(path)
+			futureDiagram, err := graph.PrepareGraphForPrinting(path)
+			if err != nil {
+				fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
+			}
+
 			fmt.Println(futureDiagram)
 			//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
 			//if err != nil {
