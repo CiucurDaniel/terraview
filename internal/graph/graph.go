@@ -72,6 +72,16 @@ func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
 	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
+// TODO: Implement
+// This will set:
+// - compound = true
+// - newrank = ???
+// - rankdir = "TD
+// - (optional) call SetGraphGlobalImagePath
+func SetGraphAttrs(graph *gographviz.Graph) {
+
+}
+
 // IsResourceNode checks if the label represents a resource node based on the known provider prefixes.
 // It returns true if the label starts with any of the known prefixes, otherwise false.
 func IsResourceNode(label string) bool {
@@ -181,20 +191,22 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
 	}
 
-	//SetGraphGlobalImagePath(graph, GlobalImagePath)
-	ConvertNodesToSubgraphs(graph)
+	SetGraphGlobalImagePath(graph, GlobalImagePath)
+	CreateSubgraphsForGrouppingNodes(graph)
 	//AddImageLabel(graph)
-	//PositionLabelTo(graph, LABEL_LOCATION)
+	PositionLabelTo(graph, LABEL_LOCATION)
 
 	return graph, nil
 }
 
-// Function to convert nodes to subgraphs
-func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
+// Function creates a subgraph for each node that is a groupping node
+func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
 
-	fmt.Println("ConvertNodesToSubgraphs reached")
+	// TODO: Read from config
 	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group"}
 	var counter = 0
+
+	fmt.Println("Graph name " + graph.Name)
 
 	for _, node := range graph.Nodes.Nodes {
 		label := node.Attrs["label"]
@@ -216,7 +228,8 @@ func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 		}
 	}
 
-	graph.AddNode("cluster_azurerm_resource_group.rg", "A", nil)
+	//graph.AddNode("cluster_azurerm_resource_group.rg", "A", nil)
+
 	fmt.Println("Subgraphs are:")
 	for _, s := range graph.SubGraphs.Sorted() {
 		fmt.Println(s.Name)
@@ -227,12 +240,15 @@ func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 	fmt.Println(graph.String())
 	fmt.Println("------------------------")
 
-	for _, edge := range graph.Edges.Sorted() {
-		fmt.Println("Edge: " + edge.Src + "--->" + edge.Dst)
-	}
+	// for _, edge := range graph.Edges.Sorted() {
+	// 	fmt.Println("Edge: " + edge.Src + "--->" + edge.Dst)
+	// }
 
 	// Trying to print the relationships
 	printRelations(graph)
+
+	// DFS traversal
+	DfsTraversal(graph)
 
 	return nil
 }
@@ -252,18 +268,69 @@ func printRelations(graph *gographviz.Graph) {
 
 	fmt.Println("ParentToChildren relationships:")
 	for parent, children := range relations.ParentToChildren {
-		fmt.Printf("Parent: %s\n", parent)
+		fmt.Printf("Parent: %s", parent)
 		for child := range children {
-			fmt.Printf("  Child: %s\n", child)
+			fmt.Printf("  Child: %s ;", child)
 		}
+		fmt.Println()
 	}
 
 	fmt.Println("\nChildToParents relationships:")
 	for child, parents := range relations.ChildToParents {
-		fmt.Printf("Child: %s\n", child)
+		fmt.Printf("Child: %s", child)
 		for parent := range parents {
-			fmt.Printf("  Parent: %s\n", parent)
-			fmt.Println()
+			fmt.Printf("  Parent: %s ;", parent)
+		}
+		fmt.Println()
+	}
+}
+
+// DfsTraversal performs a depth-first search traversal on the graph.
+func DfsTraversal(graph *gographviz.Graph) {
+	visited := make(map[string]bool)
+	for _, node := range graph.Nodes.Nodes {
+		if !visited[node.Name] {
+			dfsHelper(graph, node.Name, visited)
 		}
 	}
 }
+
+// dfsHelper is a recursive helper function for DFS traversal.
+func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
+	// Mark the current node as visited.
+	visited[node] = true
+	fmt.Println("Visited:", node)
+
+	// Get all the edges starting from the current node.
+	for _, edge := range graph.Edges.SrcToDsts[node] {
+		for _, dst := range edge {
+			if !visited[dst.Src] {
+				dfsHelper(graph, dst.Src, visited)
+			}
+		}
+	}
+}
+
+func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
+	relations := graph.Relations
+	parents, ok := relations.ChildToParents[nodeName]
+	var nodeParent string
+
+	if !ok {
+		fmt.Printf("No parents found for node %s \n", nodeName) // might need to be an error and return
+	}
+
+	for parent := range parents {
+		fmt.Printf("Parents of node %s is %s \n", nodeName, parent)
+		nodeParent = parent
+	}
+
+	return nodeParent
+
+}
+
+// TODO: Test this concept
+// Parcurg graful in DFS
+// pentru nodu-ul curent, daca este groupping node
+// creez un subGraph, pentru FindNodeParent(nodul current) -> care afla simplu prin child ChildToParents relationships
+// subgraful va fi inserat AddSubGraf(parent gasit)
