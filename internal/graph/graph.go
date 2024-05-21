@@ -42,6 +42,7 @@ func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 	// Run the command
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("error running 'terraform graph' command in directory %s: %v", absDirPath, err)
+		// WARNING: this will always be thrown if user didn't run terraform init prior to invoking our code
 	}
 
 	// Get the graph data as a string
@@ -191,6 +192,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 // Function to convert nodes to subgraphs
 func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 
+	fmt.Println("ConvertNodesToSubgraphs reached")
 	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group"}
 	var counter = 0
 
@@ -228,6 +230,10 @@ func ConvertNodesToSubgraphs(graph *gographviz.Graph) error {
 	for _, edge := range graph.Edges.Sorted() {
 		fmt.Println("Edge: " + edge.Src + "--->" + edge.Dst)
 	}
+
+	// Trying to print the relationships
+	printRelations(graph)
+
 	return nil
 }
 
@@ -238,4 +244,26 @@ func contains(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// printRelations nicely prints the Relations struct from gographviz.Graph
+func printRelations(graph *gographviz.Graph) {
+	relations := graph.Relations
+
+	fmt.Println("ParentToChildren relationships:")
+	for parent, children := range relations.ParentToChildren {
+		fmt.Printf("Parent: %s\n", parent)
+		for child := range children {
+			fmt.Printf("  Child: %s\n", child)
+		}
+	}
+
+	fmt.Println("\nChildToParents relationships:")
+	for child, parents := range relations.ChildToParents {
+		fmt.Printf("Child: %s\n", child)
+		for parent := range parents {
+			fmt.Printf("  Parent: %s\n", parent)
+			fmt.Println()
+		}
+	}
 }
