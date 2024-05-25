@@ -38,7 +38,7 @@ resource "azurerm_subnet" "subnet" {
 }
 
 # Create a virtual machine
-resource "azurerm_linux_virtual_machine" "vm" {
+resource "azurerm_linux_virtual_machine" "vm_1" {
   name                = "sample-vm"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
@@ -46,7 +46,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   admin_username      = "adminuser"
   admin_password      = "P@ssw0rd123!"
 
-  network_interface_ids = [azurerm_network_interface.nic.id]
+  network_interface_ids = [azurerm_network_interface.nic_1.id]
 
   os_disk {
     caching              = "ReadWrite"
@@ -62,7 +62,43 @@ resource "azurerm_linux_virtual_machine" "vm" {
 }
 
 # Create a network interface
-resource "azurerm_network_interface" "nic" {
+resource "azurerm_network_interface" "nic_1" {
+  name                = "nic-sample"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "ipconfig-sample"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "vm_2" {
+  name                = "sample-vm"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  size                = "Standard_DS1_v2"
+  admin_username      = "adminuser"
+  admin_password      = "P@ssw0rd123!"
+
+  network_interface_ids = [azurerm_network_interface.nic_2.id]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+}
+
+# Create a network interface
+resource "azurerm_network_interface" "nic_2" {
   name                = "nic-sample"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
