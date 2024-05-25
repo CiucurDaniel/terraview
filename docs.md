@@ -155,3 +155,35 @@ func BfsTraversal(graph *gographviz.Graph) {
 	}
 }
 ```
+
+### Reverse DFS traversal
+
+
+```golang
+// ReverseDfsTraversal performs a depth-first search traversal on the graph in reverse direction.
+func ReverseDfsTraversal(graph *gographviz.Graph) {
+	visited := make(map[string]bool)
+	for _, node := range graph.Nodes.Nodes {
+		if !visited[node.Name] {
+			reverseDfsHelper(graph, node.Name, visited)
+		}
+	}
+}
+
+// reverseDfsHelper is a recursive helper function for reverse DFS traversal.
+func reverseDfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
+	// Mark the current node as visited.
+	visited[node] = true
+	fmt.Println("Visited:", node)
+
+	// Get all the edges ending at the current node (reverse direction).
+	for _, edges := range graph.Edges.DstToSrcs[node] {
+		for _, src := range edges {
+			if !visited[src.Src] {
+				reverseDfsHelper(graph, src.Src, visited)
+			}
+		}
+	}
+}
+
+```
