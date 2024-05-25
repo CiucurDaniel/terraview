@@ -81,6 +81,8 @@ func SetGraphAttrs(graph *gographviz.Graph) {
 	graph.Attrs["compound"] = `"true"`
 	graph.Attrs["rankdir"] = `"BT"`
 	graph.Attrs["newrank"] = `"true"`
+
+	// TODO: set nodesep=6;ranksep=1;
 }
 
 // IsResourceNode checks if the label represents a resource node based on the known provider prefixes.
