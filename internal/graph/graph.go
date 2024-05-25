@@ -72,10 +72,9 @@ func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
 	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
-// TODO: Implement
 // This will set:
 // - compound = true
-// - newrank = ???
+// - newrank = true
 // - rankdir = "TD
 // - (optional) call SetGraphGlobalImagePath
 func SetGraphAttrs(graph *gographviz.Graph) {
@@ -95,7 +94,6 @@ func IsResourceNode(label string) bool {
 	return false
 }
 
-// TODO: Needs fixing, currently it break the formatting because the added label is not correct
 // AddImageLabel appends an image label to every resource node in the graph where the value
 // is constructed based on the label of the node.
 func AddImageLabel(graph *gographviz.Graph) {
@@ -196,7 +194,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
 	CreateSubgraphsForGrouppingNodes(graph)
-	//AddImageLabel(graph)
+	AddImageLabel(graph)
 	PositionLabelTo(graph, LABEL_LOCATION)
 
 	return graph, nil
@@ -204,19 +202,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 
 // Function creates a subgraph for each node that is a groupping node
 func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
-
-	// DFS traversal
 	DfsTraversal(graph)
-
-	fmt.Println("Relations after add subgraphs")
-	printRelations(graph)
-
-	fmt.Println("Subgraphs are:")
-	for _, s := range graph.SubGraphs.Sorted() {
-		fmt.Println(s.Name)
-	}
-	fmt.Println("------------------------")
-
 	return nil
 }
 
@@ -260,9 +246,6 @@ func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
 				fmt.Println("ERROR: Got an error trying to add subgraph")
 			}
 
-			// TODO: Find the previous groupping resource instead of the parent graph
-			// remove FindNodeParent from above
-
 			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node, graph)
 
 			rn := findAllReachingNodes(node, graph)
@@ -286,25 +269,6 @@ func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
 					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), reachingNode, graph)
 				}
 			}
-
-			// Find all reachable nodes from node "A"
-			//reachableNodes := findAllReachableNodes(node, graph)
-
-			// // Set each reachable node as a child of graph "G"
-			// for _, node := range graph.Nodes.Sorted() {
-			// 	if !contains(greachableNodes, node.Name) {
-			// 		if foundGroupingResource := contains(groupingLabels, strings.Split(label, ".")[0]); foundGroupingResource {
-			// 			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node.Name, graph)
-			// 		} else {
-			// 			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node.Name, graph)
-			// 		}
-			// 	}
-			// }
-
-			// tine minte toate reachableNodes
-			// Gaseste Sungrafurile pe baza nodurile groupping din lista
-			// Adauga subgraf ca subgraf al celeui curent
-			// la final adauga ca child si nodurile ramase
 
 		} else {
 			fmt.Println("Visited:", node)
@@ -350,7 +314,8 @@ func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
 
 }
 
-// Function updates the relations in order to make nodeName a child of the given graph/subgraph
+// Function updates the relations in order to make nodeName a child of the given graph/subgraph,
+// nodeName can also be a subgraph
 func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
 	relations := graph.Relations
 
@@ -383,28 +348,19 @@ func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
 	}
 }
 
-// findAllReachableNodes performs a DFS to find all reachable nodes from the given node.
-func findAllReachableNodes(startNode string, graph *gographviz.Graph) []string {
-	visited := make(map[string]bool)
-	var result []string
-
-	var dfs func(string)
-	dfs = func(n string) {
-		if visited[n] {
-			return
-		}
-		visited[n] = true
-		result = append(result, n)
-
-		if edges, ok := graph.Edges.SrcToDsts[n]; ok {
-			for dst := range edges {
-				dfs(dst)
+// CheckEdgeExistence checks if there is an edge from node1 to node2 in the graph.
+func CheckEdgeExistence(node1, node2 string, graph *gographviz.Graph) bool {
+	// Check if node1 has edges directed towards node2
+	if edges, exists := graph.Edges.SrcToDsts[node1]; exists {
+		for _, edgeList := range edges {
+			for _, edge := range edgeList {
+				if edge.Dst == node2 {
+					return true
+				}
 			}
 		}
 	}
-
-	dfs(startNode)
-	return result
+	return false
 }
 
 // findAllReachingNodes performs a reverse DFS to find all nodes that can reach the given node.
@@ -431,12 +387,29 @@ func findAllReachingNodes(targetNode string, graph *gographviz.Graph) []string {
 	return result
 }
 
-// TODO: Test this concept
-// Parcurg graful in DFS
-// pentru nodu-ul curent, daca este groupping node
-// creez un subGraph, pentru FindNodeParent(nodul current) -> care afla simplu prin child ChildToParents relationships
-// dupa crearea subgrafului nodul curent va fi marcat ca child al noului subgraf -> e nevoie de o functie pentru asta
-// subgraful va fi inserat AddSubGraf(parent gasit)
+// findAllReachableNodes performs a DFS to find all reachable nodes from the given node.
+func findAllReachableNodes(startNode string, graph *gographviz.Graph) []string {
+	visited := make(map[string]bool)
+	var result []string
+
+	var dfs func(string)
+	dfs = func(n string) {
+		if visited[n] {
+			return
+		}
+		visited[n] = true
+		result = append(result, n)
+
+		if edges, ok := graph.Edges.SrcToDsts[n]; ok {
+			for dst := range edges {
+				dfs(dst)
+			}
+		}
+	}
+
+	dfs(startNode)
+	return result
+}
 
 // printRelations nicely prints the Relations struct from gographviz.Graph
 func printRelations(graph *gographviz.Graph) {
@@ -459,53 +432,4 @@ func printRelations(graph *gographviz.Graph) {
 		}
 		fmt.Println()
 	}
-}
-
-// BfsTraversal performs a breadth-first search traversal on the graph.
-func BfsTraversal(graph *gographviz.Graph) {
-	visited := make(map[string]bool)
-	queue := []string{}
-
-	// Start BFS from each node that hasn't been visited yet
-	for _, node := range graph.Nodes.Nodes {
-		if !visited[node.Name] {
-			queue = append(queue, node.Name)
-			visited[node.Name] = true
-
-			// Process the queue
-			for len(queue) > 0 {
-				// Dequeue the next node
-				currentNode := queue[0]
-				queue = queue[1:]
-
-				// Visit the node
-				fmt.Println("Visited:", currentNode)
-
-				// Enqueue all adjacent nodes
-				for _, edge := range graph.Edges.SrcToDsts[currentNode] {
-					for _, dst := range edge {
-						if !visited[dst.Src] {
-							queue = append(queue, dst.Src)
-							visited[dst.Src] = true
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-// CheckEdgeExistence checks if there is an edge from node1 to node2 in the graph.
-func CheckEdgeExistence(node1, node2 string, graph *gographviz.Graph) bool {
-	// Check if node1 has edges directed towards node2
-	if edges, exists := graph.Edges.SrcToDsts[node1]; exists {
-		for _, edgeList := range edges {
-			for _, edge := range edgeList {
-				if edge.Dst == node2 {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
