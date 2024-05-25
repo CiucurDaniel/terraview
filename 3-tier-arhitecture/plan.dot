@@ -1,0 +1,35 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "azurerm_lb.db_lb" [label="azurerm_lb.db_lb"];
+  "azurerm_lb.middleware_lb" [label="azurerm_lb.middleware_lb"];
+  "azurerm_lb.ui_lb" [label="azurerm_lb.ui_lb"];
+  "azurerm_network_interface.db_nic" [label="azurerm_network_interface.db_nic"];
+  "azurerm_network_interface.middleware_nic" [label="azurerm_network_interface.middleware_nic"];
+  "azurerm_network_interface.ui_nic" [label="azurerm_network_interface.ui_nic"];
+  "azurerm_resource_group.example" [label="azurerm_resource_group.example"];
+  "azurerm_subnet.db_subnet" [label="azurerm_subnet.db_subnet"];
+  "azurerm_subnet.middleware_subnet" [label="azurerm_subnet.middleware_subnet"];
+  "azurerm_subnet.ui_subnet" [label="azurerm_subnet.ui_subnet"];
+  "azurerm_virtual_machine.db_vm" [label="azurerm_virtual_machine.db_vm"];
+  "azurerm_virtual_machine.middleware_vm" [label="azurerm_virtual_machine.middleware_vm"];
+  "azurerm_virtual_machine.ui_vm" [label="azurerm_virtual_machine.ui_vm"];
+  "azurerm_virtual_network.db_vnet" [label="azurerm_virtual_network.db_vnet"];
+  "azurerm_virtual_network.middleware_vnet" [label="azurerm_virtual_network.middleware_vnet"];
+  "azurerm_virtual_network.ui_vnet" [label="azurerm_virtual_network.ui_vnet"];
+  "azurerm_lb.db_lb" -> "azurerm_subnet.db_subnet";
+  "azurerm_lb.middleware_lb" -> "azurerm_subnet.middleware_subnet";
+  "azurerm_lb.ui_lb" -> "azurerm_subnet.ui_subnet";
+  "azurerm_network_interface.db_nic" -> "azurerm_subnet.db_subnet";
+  "azurerm_network_interface.middleware_nic" -> "azurerm_subnet.middleware_subnet";
+  "azurerm_network_interface.ui_nic" -> "azurerm_subnet.ui_subnet";
+  "azurerm_subnet.db_subnet" -> "azurerm_virtual_network.db_vnet";
+  "azurerm_subnet.middleware_subnet" -> "azurerm_virtual_network.middleware_vnet";
+  "azurerm_subnet.ui_subnet" -> "azurerm_virtual_network.ui_vnet";
+  "azurerm_virtual_machine.db_vm" -> "azurerm_network_interface.db_nic";
+  "azurerm_virtual_machine.middleware_vm" -> "azurerm_network_interface.middleware_nic";
+  "azurerm_virtual_machine.ui_vm" -> "azurerm_network_interface.ui_nic";
+  "azurerm_virtual_network.db_vnet" -> "azurerm_resource_group.example";
+  "azurerm_virtual_network.middleware_vnet" -> "azurerm_resource_group.example";
+  "azurerm_virtual_network.ui_vnet" -> "azurerm_resource_group.example";
+}
