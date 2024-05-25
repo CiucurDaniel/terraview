@@ -225,7 +225,7 @@ func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
 	// Add subgraph if the node is a groupping resource
 	label := strings.Trim(graph.Nodes.Lookup[node].Attrs["label"], `"`)
 
-	//
+	// TODO: Use global config for this
 	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"}
 
 	if IsResourceNode(label) {
