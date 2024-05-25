@@ -79,7 +79,9 @@ func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
 // - rankdir = "TD
 // - (optional) call SetGraphGlobalImagePath
 func SetGraphAttrs(graph *gographviz.Graph) {
-
+	graph.Attrs["compound"] = `"true"`
+	graph.Attrs["rankdir"] = `"BT"`
+	graph.Attrs["newrank"] = `"true"`
 }
 
 // IsResourceNode checks if the label represents a resource node based on the known provider prefixes.
@@ -192,6 +194,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	}
 
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
+	SetGraphAttrs(graph)
 	CreateSubgraphsForGrouppingNodes(graph)
 	//AddImageLabel(graph)
 	PositionLabelTo(graph, LABEL_LOCATION)
@@ -202,33 +205,11 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 // Function creates a subgraph for each node that is a groupping node
 func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
 
-	// TODO: Read from config
-	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group"}
-	var counter = 0
+	// DFS traversal
+	DfsTraversal(graph)
 
-	fmt.Println("Graph name " + graph.Name)
-
-	for _, node := range graph.Nodes.Nodes {
-		label := node.Attrs["label"]
-		label = strings.Trim(label, `"`)
-		if IsResourceNode(label) {
-			parts := strings.Split(label, ".")
-			foundGroupingResource := contains(groupingLabels, parts[0])
-			if foundGroupingResource {
-				fmt.Println("Found grouping resource: " + parts[0])
-				counter++
-
-				// do not add only the resource type, add the full name, so later we can add the node inside this subGraph
-				err := graph.AddSubGraph(`"root"`, "cluster_"+label, nil)
-				if err != nil {
-					fmt.Println("DEBUG: Got an error trying to add subgraph")
-				}
-
-			}
-		}
-	}
-
-	//graph.AddNode("cluster_azurerm_resource_group.rg", "A", nil)
+	fmt.Println("Relations after add subgraphs")
+	printRelations(graph)
 
 	fmt.Println("Subgraphs are:")
 	for _, s := range graph.SubGraphs.Sorted() {
@@ -236,23 +217,112 @@ func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
 	}
 	fmt.Println("------------------------")
 
-	fmt.Println("About to print the graph")
-	fmt.Println(graph.String())
-	fmt.Println("------------------------")
-
-	// for _, edge := range graph.Edges.Sorted() {
-	// 	fmt.Println("Edge: " + edge.Src + "--->" + edge.Dst)
-	// }
-
-	// Trying to print the relationships
-	printRelations(graph)
-
-	// DFS traversal
-	DfsTraversal(graph)
-
 	return nil
 }
 
+// DfsTraversal performs a depth-first search traversal on the graph.
+func DfsTraversal(graph *gographviz.Graph) {
+	visited := make(map[string]bool)
+	for _, node := range graph.Nodes.Nodes {
+		if !visited[node.Name] {
+			dfsHelper(graph, node.Name, visited)
+		}
+	}
+}
+
+// dfsHelper is a recursive helper function for DFS traversal.
+func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
+	// Mark the current node as visited.
+	visited[node] = true
+	//fmt.Println("Visited:", node)
+
+	// Add subgraph if the node is a groupping resource
+	label := strings.Trim(graph.Nodes.Lookup[node].Attrs["label"], `"`)
+
+	//
+	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"}
+
+	if IsResourceNode(label) {
+		// label="azurerm_linux_virtual_machine.vm"
+		// azurerm_linux_virtual_machine is the part we need
+		if foundGroupingResource := contains(groupingLabels, strings.Split(label, ".")[0]); foundGroupingResource {
+			fmt.Println("Visited a groupping node: " + node)
+
+			// special case because root graph name doesn't have quotes
+			parentNode := FindNodeParent(node, graph)
+			if parentNode != "G" {
+				parentNode = strings.Trim(parentNode, `"`)
+				parentNode = fmt.Sprintf(`"%s"`, parentNode)
+			}
+			// INFO: do not add only the resource type, add the full name, so later we can add the node inside this subGraph
+			err := graph.AddSubGraph(parentNode, fmt.Sprintf(`"%s"`, "cluster_"+label), map[string]string{"label": fmt.Sprintf(`"%s"`, label)})
+			if err != nil {
+				fmt.Println("ERROR: Got an error trying to add subgraph")
+			}
+
+			// TODO: Find the previous groupping resource instead of the parent graph
+			// remove FindNodeParent from above
+
+			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node, graph)
+
+			rn := findAllReachingNodes(node, graph)
+
+			// Step 2
+			for _, subGraph := range graph.SubGraphs.Sorted() {
+				n := strings.TrimLeft(strings.Trim(subGraph.Name, `"`), "cluster_")
+				n = `"` + n + `"`
+				fmt.Println("checking if i have an edge between " + n + " and " + node)
+				if CheckEdgeExistence(n, node, graph) {
+					fmt.Println("--- graph " + n + " has to be child of the current found graph " + node)
+					fmt.Println("Setting " + fmt.Sprintf(`"%s"`, "cluster_"+n) + " as child subgraph of " + fmt.Sprintf(`"%s"`, "cluster_"+node))
+					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(node, `"`)), fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(n, `"`)), graph)
+				}
+			}
+
+			// Step 1
+			for _, reachingNode := range rn {
+				if reachingNodeParent := FindNodeParent(reachingNode, graph); reachingNodeParent == "G" {
+					fmt.Println("reaching node " + reachingNode + " will be set as child  of " + fmt.Sprintf(`"%s"`, "cluster_"+label))
+					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), reachingNode, graph)
+				}
+			}
+
+			// Find all reachable nodes from node "A"
+			//reachableNodes := findAllReachableNodes(node, graph)
+
+			// // Set each reachable node as a child of graph "G"
+			// for _, node := range graph.Nodes.Sorted() {
+			// 	if !contains(greachableNodes, node.Name) {
+			// 		if foundGroupingResource := contains(groupingLabels, strings.Split(label, ".")[0]); foundGroupingResource {
+			// 			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node.Name, graph)
+			// 		} else {
+			// 			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node.Name, graph)
+			// 		}
+			// 	}
+			// }
+
+			// tine minte toate reachableNodes
+			// Gaseste Sungrafurile pe baza nodurile groupping din lista
+			// Adauga subgraf ca subgraf al celeui curent
+			// la final adauga ca child si nodurile ramase
+
+		} else {
+			fmt.Println("Visited:", node)
+		}
+	}
+
+	// Get all the edges starting from the current node.
+	for _, edge := range graph.Edges.SrcToDsts[node] {
+		for _, dst := range edge {
+			if !visited[dst.Dst] {
+				dfsHelper(graph, dst.Dst, visited)
+			}
+		}
+	}
+}
+
+// change to be foundGroupingResource
+// receive a node and check the label
 func contains(arr []string, str string) bool {
 	for _, item := range arr {
 		if item == str {
@@ -261,6 +331,112 @@ func contains(arr []string, str string) bool {
 	}
 	return false
 }
+
+func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
+	relations := graph.Relations
+	parents, ok := relations.ChildToParents[nodeName]
+	var nodeParent string
+
+	if !ok {
+		fmt.Printf("No parents found for node %s \n", nodeName) // might need to be an error and return
+	}
+
+	for parent := range parents {
+		fmt.Printf("Parents of node %s is %s \n", nodeName, parent)
+		nodeParent = parent
+	}
+
+	return nodeParent
+
+}
+
+// Function updates the relations in order to make nodeName a child of the given graph/subgraph
+func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
+	relations := graph.Relations
+
+	// Initialize parent-to-children and child-to-parents maps if they don't exist
+	if _, exists := relations.ParentToChildren[graphName]; !exists {
+		relations.ParentToChildren[graphName] = make(map[string]bool)
+	}
+	if _, exists := relations.ChildToParents[nodeName]; !exists {
+		relations.ChildToParents[nodeName] = make(map[string]bool)
+	}
+
+	// Update relations
+	relations.ParentToChildren[graphName][nodeName] = true
+	relations.ChildToParents[nodeName][graphName] = true
+
+	// Optionally, you may want to remove the node from any other parents to ensure it is only a child of the specified graphName
+	for parent, children := range relations.ParentToChildren {
+		if parent != graphName {
+			delete(children, nodeName)
+		}
+	}
+	for child, parents := range relations.ChildToParents {
+		if child == nodeName && len(parents) > 1 {
+			for parent := range parents {
+				if parent != graphName {
+					delete(parents, parent)
+				}
+			}
+		}
+	}
+}
+
+// findAllReachableNodes performs a DFS to find all reachable nodes from the given node.
+func findAllReachableNodes(startNode string, graph *gographviz.Graph) []string {
+	visited := make(map[string]bool)
+	var result []string
+
+	var dfs func(string)
+	dfs = func(n string) {
+		if visited[n] {
+			return
+		}
+		visited[n] = true
+		result = append(result, n)
+
+		if edges, ok := graph.Edges.SrcToDsts[n]; ok {
+			for dst := range edges {
+				dfs(dst)
+			}
+		}
+	}
+
+	dfs(startNode)
+	return result
+}
+
+// findAllReachingNodes performs a reverse DFS to find all nodes that can reach the given node.
+func findAllReachingNodes(targetNode string, graph *gographviz.Graph) []string {
+	visited := make(map[string]bool)
+	var result []string
+
+	var reverseDfs func(string)
+	reverseDfs = func(n string) {
+		if visited[n] {
+			return
+		}
+		visited[n] = true
+		result = append(result, n)
+
+		if edges, ok := graph.Edges.DstToSrcs[n]; ok {
+			for src := range edges {
+				reverseDfs(src)
+			}
+		}
+	}
+
+	reverseDfs(targetNode)
+	return result
+}
+
+// TODO: Test this concept
+// Parcurg graful in DFS
+// pentru nodu-ul curent, daca este groupping node
+// creez un subGraph, pentru FindNodeParent(nodul current) -> care afla simplu prin child ChildToParents relationships
+// dupa crearea subgrafului nodul curent va fi marcat ca child al noului subgraf -> e nevoie de o functie pentru asta
+// subgraful va fi inserat AddSubGraf(parent gasit)
 
 // printRelations nicely prints the Relations struct from gographviz.Graph
 func printRelations(graph *gographviz.Graph) {
@@ -285,52 +461,51 @@ func printRelations(graph *gographviz.Graph) {
 	}
 }
 
-// DfsTraversal performs a depth-first search traversal on the graph.
-func DfsTraversal(graph *gographviz.Graph) {
+// BfsTraversal performs a breadth-first search traversal on the graph.
+func BfsTraversal(graph *gographviz.Graph) {
 	visited := make(map[string]bool)
+	queue := []string{}
+
+	// Start BFS from each node that hasn't been visited yet
 	for _, node := range graph.Nodes.Nodes {
 		if !visited[node.Name] {
-			dfsHelper(graph, node.Name, visited)
-		}
-	}
-}
+			queue = append(queue, node.Name)
+			visited[node.Name] = true
 
-// dfsHelper is a recursive helper function for DFS traversal.
-func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
-	// Mark the current node as visited.
-	visited[node] = true
-	fmt.Println("Visited:", node)
+			// Process the queue
+			for len(queue) > 0 {
+				// Dequeue the next node
+				currentNode := queue[0]
+				queue = queue[1:]
 
-	// Get all the edges starting from the current node.
-	for _, edge := range graph.Edges.SrcToDsts[node] {
-		for _, dst := range edge {
-			if !visited[dst.Src] {
-				dfsHelper(graph, dst.Src, visited)
+				// Visit the node
+				fmt.Println("Visited:", currentNode)
+
+				// Enqueue all adjacent nodes
+				for _, edge := range graph.Edges.SrcToDsts[currentNode] {
+					for _, dst := range edge {
+						if !visited[dst.Src] {
+							queue = append(queue, dst.Src)
+							visited[dst.Src] = true
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
-func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
-	relations := graph.Relations
-	parents, ok := relations.ChildToParents[nodeName]
-	var nodeParent string
-
-	if !ok {
-		fmt.Printf("No parents found for node %s \n", nodeName) // might need to be an error and return
+// CheckEdgeExistence checks if there is an edge from node1 to node2 in the graph.
+func CheckEdgeExistence(node1, node2 string, graph *gographviz.Graph) bool {
+	// Check if node1 has edges directed towards node2
+	if edges, exists := graph.Edges.SrcToDsts[node1]; exists {
+		for _, edgeList := range edges {
+			for _, edge := range edgeList {
+				if edge.Dst == node2 {
+					return true
+				}
+			}
+		}
 	}
-
-	for parent := range parents {
-		fmt.Printf("Parents of node %s is %s \n", nodeName, parent)
-		nodeParent = parent
-	}
-
-	return nodeParent
-
+	return false
 }
-
-// TODO: Test this concept
-// Parcurg graful in DFS
-// pentru nodu-ul curent, daca este groupping node
-// creez un subGraph, pentru FindNodeParent(nodul current) -> care afla simplu prin child ChildToParents relationships
-// subgraful va fi inserat AddSubGraf(parent gasit)
