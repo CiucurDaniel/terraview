@@ -170,6 +170,19 @@ func AddMarginToNodes(graph *gographviz.Graph, value float32) {
 	}
 }
 
+// AddMarginToNodes sets the margin attribute of every node in the graph to the specified value.
+func SetGraphFontsize(graph *gographviz.Graph, graphValue, nodeValue float32) {
+	// Iterate over every node in the graph
+	for _, node := range graph.Nodes.Nodes {
+		node.Attrs["fontsize"] = fmt.Sprintf(`"%.1f"`, nodeValue)
+	}
+
+	// Iterate over every graph/subgraph in the graph
+	for _, graph := range graph.SubGraphs.SubGraphs {
+		graph.Attrs["fontsize"] = fmt.Sprintf(`"%.1f"`, graphValue)
+	}
+}
+
 // SaveGraphAsJPEG saves the given graph as a JPEG image.
 func SaveGraphAsJPEG(graph *gographviz.Graph, filePath string) error {
 	// Render the graph to DOT format
@@ -226,6 +239,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	AddImageLabel(graph)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
 	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
+	SetGraphFontsize(graph, 26.0, 20.0)
 	AddMarginToNodes(graph, 1.5)
 
 	return graph, nil
