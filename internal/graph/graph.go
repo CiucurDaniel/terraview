@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	LABEL_LOCATION = "b"
+	NODE_LABEL_LOCATION  = "b"
+	GRAPH_LABEL_LOCATION = "b"
 
 	// GlobalImagePath is the path where the images are stored.
 	GlobalImagePath = "internal/icons/azurerm"
@@ -130,9 +131,9 @@ func AddImageLabel(graph *gographviz.Graph) {
 	}
 }
 
-// PositionLabelTo sets the labelloc attribute of every node in the graph to the specified position.
+// PositionNodeLabelTo sets the labelloc attribute of every node in the graph to the specified position.
 // Valid positions are "t" (top), "c" (center), and "b" (bottom).
-func PositionLabelTo(graph *gographviz.Graph, position string) {
+func PositionNodeLabelTo(graph *gographviz.Graph, position string) {
 	// Check if the specified position is valid
 	if position != "t" && position != "c" && position != "b" {
 		return // If not valid, do nothing
@@ -142,6 +143,21 @@ func PositionLabelTo(graph *gographviz.Graph, position string) {
 	for _, node := range graph.Nodes.Nodes {
 		// Set the labelloc attribute of the node to the specified position
 		node.Attrs["labelloc"] = fmt.Sprintf(`"%s"`, position)
+	}
+}
+
+// PositionGraphLabelTo sets the labelloc attribute of every graph/subgraph in the graph to the specified position.
+// Valid positions are "t" (top), "c" (center), and "b" (bottom).
+func PositionGraphLabelTo(graph *gographviz.Graph, position string) {
+	// Check if the specified position is valid
+	if position != "t" && position != "c" && position != "b" {
+		return // If not valid, do nothing
+	}
+
+	// Iterate over every node in the graph
+	for _, graph := range graph.SubGraphs.SubGraphs {
+		// Set the labelloc attribute of the node to the specified position
+		graph.Attrs["labelloc"] = fmt.Sprintf(`"%s"`, position)
 	}
 }
 
@@ -208,7 +224,8 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	SetGraphAttrs(graph)
 	CreateSubgraphsForGrouppingNodes(graph)
 	AddImageLabel(graph)
-	PositionLabelTo(graph, LABEL_LOCATION)
+	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
+	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
 	AddMarginToNodes(graph, 1.5)
 
 	return graph, nil
