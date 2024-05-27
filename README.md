@@ -8,11 +8,11 @@ terraform graph > simple-plan.dot
 
 # GOALS
 
-* parseaza graf terraform
-* sterge resursele care nu au sens sau nu fac parte din provider
-* adauga label cu imaginea
-* modifica numele resurselor
-* print graf in jpeg
+- [x] parseaza graf terraform
+- [ ] sterge resursele care nu au sens sau nu fac parte din provider
+- [x] adauga label cu imaginea
+- [ ] modifica numele resurselor
+- [ ] print graf in jpeg
 
 # Cobra-cli
 
@@ -38,3 +38,6 @@ https://stackoverflow.com/questions/49819164/graphviz-nodes-of-svg-images-do-not
 
 Separate labels from Image itself
 https://stackoverflow.com/questions/58832678/how-to-separate-picture-and-label-of-a-node-with-graphviz
+
+Parse HCL
+https://getcoal.medium.com/golang-handling-terraform-files-a37371c621e3
