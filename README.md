@@ -41,3 +41,6 @@ https://stackoverflow.com/questions/58832678/how-to-separate-picture-and-label-o
 
 Parse HCL
 https://getcoal.medium.com/golang-handling-terraform-files-a37371c621e3
+
+Parse state file
+https://github.com/fujiwara/tfstate-lookup/tree/main
