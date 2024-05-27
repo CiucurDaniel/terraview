@@ -145,6 +145,15 @@ func PositionLabelTo(graph *gographviz.Graph, position string) {
 	}
 }
 
+// AddMarginToNodes sets the margin attribute of every node in the graph to the specified value.
+func AddMarginToNodes(graph *gographviz.Graph, value float32) {
+	// Iterate over every node in the graph
+	for _, node := range graph.Nodes.Nodes {
+		// Set the labelloc attribute of the node to the specified position
+		node.Attrs["margin"] = fmt.Sprintf(`"%.2f"`, value)
+	}
+}
+
 // SaveGraphAsJPEG saves the given graph as a JPEG image.
 func SaveGraphAsJPEG(graph *gographviz.Graph, filePath string) error {
 	// Render the graph to DOT format
@@ -200,6 +209,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	CreateSubgraphsForGrouppingNodes(graph)
 	AddImageLabel(graph)
 	PositionLabelTo(graph, LABEL_LOCATION)
+	AddMarginToNodes(graph, 1.5)
 
 	return graph, nil
 }
