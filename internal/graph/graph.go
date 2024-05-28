@@ -83,7 +83,7 @@ func SetGraphAttrs(graph *gographviz.Graph) {
 	graph.Attrs["rankdir"] = `"BT"`
 	graph.Attrs["newrank"] = `"true"`
 	graph.Attrs["nodesep"] = `"4"`
-	graph.Attrs["ranksep"] = `"1"`
+	graph.Attrs["ranksep"] = `"1.5"`
 
 	// TODO: For each subgraph set labelloc="b";
 }
