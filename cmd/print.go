@@ -44,6 +44,8 @@ terrraview print /users/Mike/terraform/`,
 		//	fmt.Println("Error occurred generating image")
 		//}
 
+		config.PrintImportantAttributes()
+
 	},
 }
 

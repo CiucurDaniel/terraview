@@ -2,14 +2,22 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"sync"
+
+	"gopkg.in/yaml.v3"
 )
+
+// Resource defines a resource with its attributes
+type Resource struct {
+	Name       string   `yaml:"resource"`
+	Attributes []string `yaml:"attributes"`
+}
 
 // Config struct to hold the configuration data
 type Config struct {
-	GroupingElements []string `yaml:"grouping_elements"`
+	GroupingElements    []string   `yaml:"grouping_elements"`
+	ImportantAttributes []Resource `yaml:"important_attributes"`
 }
 
 var (
@@ -45,4 +53,22 @@ func GetConfig() *Config {
 	mutex.Lock()
 	defer mutex.Unlock()
 	return globalConfig
+}
+
+// PrintImportantAttributes prints the important attributes from the loaded configuration
+func PrintImportantAttributes() {
+	config := GetConfig()
+	if config == nil {
+		fmt.Println("Config not loaded")
+		return
+	}
+
+	fmt.Println("Important Attributes:")
+	for _, resource := range config.ImportantAttributes {
+		fmt.Printf("Resource: %s\n", resource.Name)
+		fmt.Println("Attributes:")
+		for _, attribute := range resource.Attributes {
+			fmt.Printf("- %s\n", attribute)
+		}
+	}
 }
