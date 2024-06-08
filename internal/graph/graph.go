@@ -73,7 +73,7 @@ func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
 	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
-// This will set:
+// SetGraphAttrs func will set:
 // - compound = true
 // - newrank = true
 // - rankdir = "TD
@@ -170,7 +170,7 @@ func AddMarginToNodes(graph *gographviz.Graph, value float32) {
 	}
 }
 
-// AddMarginToNodes sets the margin attribute of every node in the graph to the specified value.
+// SetGraphFontsize sets the fontsize attribute of every node in the graph to the specified value.
 func SetGraphFontsize(graph *gographviz.Graph, graphValue, nodeValue float32) {
 	// Iterate over every node in the graph
 	for _, node := range graph.Nodes.Nodes {
@@ -245,7 +245,7 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	return graph, nil
 }
 
-// Function creates a subgraph for each node that is a groupping node
+// CreateSubgraphsForGrouppingNodes creates a subgraph for each node that is a grouping node
 func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
 	DfsTraversal(graph)
 	return nil
@@ -359,7 +359,7 @@ func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
 
 }
 
-// Function updates the relations in order to make nodeName a child of the given graph/subgraph,
+// SetChildOf function updates the relations in order to make nodeName a child of the given graph/subgraph,
 // nodeName can also be a subgraph
 func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
 	relations := graph.Relations
