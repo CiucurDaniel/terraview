@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/CiucurDaniel/terraview/internal/render"
 
 	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/CiucurDaniel/terraview/internal/graph"
@@ -37,14 +38,14 @@ terrraview print /users/Mike/terraform/`,
 			fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
 		}
 
-		fmt.Println(futureDiagram)
-		//err = graph.SaveGraphAsJPEG(futureDiagram, ".")
-		//if err != nil {
-		//	fmt.Println(err)
-		//	fmt.Println("Error occurred generating image")
-		//}
+		// fmt.Println(futureDiagram)
+		err = render.SaveGraphAsJPEG(futureDiagram, "./output.jpg")
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error occurred generating image")
+		}
 
-		config.PrintImportantAttributes()
+		// config.PrintImportantAttributes()
 
 	},
 }
