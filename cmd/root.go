@@ -14,12 +14,13 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "terraview",
 	Short: "Generate diagrams from Terraform code",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Long: `Terraview helps you generate cloud diagrams with ease. Just point it to your
+Terraform code. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+terraview print .\terraform_example\
+
+Built using Cobra.
+Author: Ciucur Daniel`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
