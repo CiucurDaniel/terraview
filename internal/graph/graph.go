@@ -66,6 +66,28 @@ func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 	return graph, nil
 }
 
+// PrepareGraphForPrinting is a facade function for preparing the graph for printing.
+// It obtains the graph data, adds image labels to nodes, and returns the modified graph.
+func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
+
+	graph, err := ObtainGraph(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
+	}
+
+	SetGraphGlobalImagePath(graph, GlobalImagePath)
+	SetGraphAttrs(graph)
+	CreateSubgraphsForGrouppingNodes(graph)
+	AddImageLabel(graph)
+	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
+	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
+	SetGraphFontsize(graph, 26.0, 20.0)
+	AddMarginToNodes(graph, 1.5)
+	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
+
+	return graph, nil
+}
+
 // SetGraphGlobalImagePath sets the global image path for the graph.
 func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
 	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
@@ -181,29 +203,43 @@ func SetGraphFontsize(graph *gographviz.Graph, graphValue, nodeValue float32) {
 	}
 }
 
+// CalculateMaxDepth calculates the maximum depth of nested subgraphs in the graph.
+func CalculateMaxDepth(graph *gographviz.Graph) int {
+	var maxDepth int
+	var dfs func(node string, depth int)
+	dfs = func(node string, depth int) {
+		if depth > maxDepth {
+			maxDepth = depth
+		}
+		for child := range graph.Relations.ParentToChildren[node] {
+			dfs(child, depth+1)
+		}
+	}
+	for _, subgraph := range graph.SubGraphs.SubGraphs {
+		dfs(subgraph.Name, 1)
+	}
+	return maxDepth
+}
+
+// SetSubgraphMargins sets the margin attribute for each subgraph based on its depth.
+func SetSubgraphMargins(graph *gographviz.Graph, maxDepth, baseMargin int) {
+	var setMargins func(node string, depth int)
+	setMargins = func(node string, depth int) {
+		marginValue := (maxDepth - depth + 1) * baseMargin
+		if subgraph, exists := graph.SubGraphs.SubGraphs[node]; exists {
+			subgraph.Attrs["margin"] = fmt.Sprintf(`"%d"`, marginValue)
+		}
+		for child := range graph.Relations.ParentToChildren[node] {
+			setMargins(child, depth+1)
+		}
+	}
+	for _, subgraph := range graph.SubGraphs.SubGraphs {
+		setMargins(subgraph.Name, 1)
+	}
+}
+
 // TODO: Create func which puts consecutive identical resources on same rank
 // similar to what was done here: https://stackoverflow.com/questions/58832678/how-to-separate-picture-and-label-of-a-node-with-graphviz
-
-// PrepareGraphForPrinting is a facade function for preparing the graph for printing.
-// It obtains the graph data, adds image labels to nodes, and returns the modified graph.
-func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
-
-	graph, err := ObtainGraph(dirPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
-	}
-
-	SetGraphGlobalImagePath(graph, GlobalImagePath)
-	SetGraphAttrs(graph)
-	CreateSubgraphsForGrouppingNodes(graph)
-	AddImageLabel(graph)
-	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
-	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
-	SetGraphFontsize(graph, 26.0, 20.0)
-	AddMarginToNodes(graph, 1.5)
-
-	return graph, nil
-}
 
 // CreateSubgraphsForGrouppingNodes creates a subgraph for each node that is a grouping node
 func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
