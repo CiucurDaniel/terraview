@@ -39,10 +39,9 @@ terrraview print /users/Mike/terraform/`,
 		}
 
 		// fmt.Println(futureDiagram)
-		err = render.SaveGraphAsJPEG(futureDiagram, "./output.jpg")
+		err = render.SaveGraphAs(futureDiagram, "./diagram", "png")
 		if err != nil {
-			fmt.Println(err)
-			fmt.Println("Error occurred generating image")
+			fmt.Println(fmt.Errorf("error occurred generating image: %v", err))
 		}
 
 		// config.PrintImportantAttributes()
