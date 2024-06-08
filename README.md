@@ -1,20 +1,28 @@
-# landscape
+# Terraview
 
 A CLI tool for generating cloud diagrams from Terraform code.
+Go from this:
 
 ```bash
 terraform graph > simple-plan.dot
+dot -Tjpeg simple-plan.dot -o diagram.jpg
 ```
 
-# GOALS
+To this:
+
+```bash
+terraview print .\terraform_example\ --format png
+```
+
+## GOALS
 
 - [x] parseaza graf terraform
 - [ ] sterge resursele care nu au sens sau nu fac parte din provider
 - [x] adauga label cu imaginea
 - [ ] modifica numele resurselor
-- [ ] print graf in jpeg
+- [x] print graf in jpeg
 
-# Cobra-cli
+## Cobra-cli
 
 Add new command:
 
@@ -22,16 +30,21 @@ Add new command:
 cobra-cli add print  
 ```
 
-# Run code
+## Run code
 
 ```bash
+go run main.go print .\terraform_example\ --format png
+
 go run main.go print .\terraform_example\ 
 
 dot -Tjpeg diagram.dot -o diagram.jpg
 ```
 
+## Current example of a generaed diagram 
 
-# TODOS
+![Simple diagram](diagram_20240609_004307.png)
+
+## TODOS
 
 Issue with SVGs
 https://stackoverflow.com/questions/49819164/graphviz-nodes-of-svg-images-do-not-get-inserted-if-output-is-svg
