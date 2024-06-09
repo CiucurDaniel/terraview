@@ -43,6 +43,7 @@ resource "azurerm_linux_virtual_machine" "vm_1" {
   size                = "Standard_B1s"
   admin_username      = "adminuser"
   admin_password      = "P@ssw0rd123!"
+  disable_password_authentication = false
 
   network_interface_ids = [azurerm_network_interface.nic_1.id]
 
@@ -80,6 +81,7 @@ resource "azurerm_linux_virtual_machine" "vm_2" {
   size                = "Standard_B1s"
   admin_username      = "adminuser"
   admin_password      = "P@ssw0rd123!"
+  disable_password_authentication = false
 
   network_interface_ids = [azurerm_network_interface.nic_2.id]
 
