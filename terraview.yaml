@@ -9,7 +9,7 @@ important_attributes:
       - size
   - resource: azurerm_subnet
     attributes:
-      - address_space
+      - address_prefixes
   - resource: azurerm_virtual_network
     attributes:
       - address_space
