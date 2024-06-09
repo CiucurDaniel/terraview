@@ -1,4 +1,3 @@
-# az account set --subscription DCPersonalSubscription
 terraform {
   required_version = ">= 1.5.6"
 
@@ -9,7 +8,6 @@ terraform {
     }
   }
 }
-
 
 provider "azurerm" {
   features {}
@@ -39,10 +37,10 @@ resource "azurerm_subnet" "subnet" {
 
 # Create a virtual machine
 resource "azurerm_linux_virtual_machine" "vm_1" {
-  name                = "sample-vm"
+  name                = "sample-vm-1"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_DS1_v2"
+  size                = "Standard_B1s"
   admin_username      = "adminuser"
   admin_password      = "P@ssw0rd123!"
 
@@ -63,22 +61,23 @@ resource "azurerm_linux_virtual_machine" "vm_1" {
 
 # Create a network interface
 resource "azurerm_network_interface" "nic_1" {
-  name                = "nic-sample"
+  name                = "nic-sample-1"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "ipconfig-sample"
+    name                          = "ipconfig-sample-1"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
   }
 }
 
+# Create a second virtual machine
 resource "azurerm_linux_virtual_machine" "vm_2" {
-  name                = "sample-vm"
+  name                = "sample-vm-2"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_DS1_v2"
+  size                = "Standard_B1s"
   admin_username      = "adminuser"
   admin_password      = "P@ssw0rd123!"
 
@@ -97,14 +96,14 @@ resource "azurerm_linux_virtual_machine" "vm_2" {
   }
 }
 
-# Create a network interface
+# Create a second network interface
 resource "azurerm_network_interface" "nic_2" {
-  name                = "nic-sample"
+  name                = "nic-sample-2"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "ipconfig-sample"
+    name                          = "ipconfig-sample-2"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
   }
