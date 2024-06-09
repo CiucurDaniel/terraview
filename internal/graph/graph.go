@@ -3,12 +3,12 @@ package graph
 import (
 	"bytes"
 	"fmt"
-	"github.com/CiucurDaniel/terraview/internal/config"
-	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/CiucurDaniel/terraview/internal/config"
+	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
 	"github.com/awalterschulze/gographviz"
 )
 
@@ -32,8 +32,14 @@ func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 		return nil, fmt.Errorf("failed to get absolute path for directory: %v", err)
 	}
 
+	// Get the absolute path to the terraform executable
+	terraformPath, err := exec.LookPath("terraform")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find terraform executable in PATH: %v", err)
+	}
+
 	// Execute "terraform graph" command in the specified directory
-	cmd := exec.Command("terraform", "graph")
+	cmd := exec.Command(terraformPath, "graph")
 	cmd.Dir = absDirPath // Set the command's working directory
 
 	// Create a buffer to store command output
