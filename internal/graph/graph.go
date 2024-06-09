@@ -86,6 +86,7 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
 	CreateSubgraphsForGrouppingNodes(graph)
+	fmt.Println("Done with grouping nodes")
 	AddImageLabel(graph)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
 	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
@@ -93,10 +94,12 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
 
+	fmt.Println("Starting to add AddImportantAttributesToLabels")
 	err = AddImportantAttributesToLabels(graph, cfg, handler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
 	}
+	fmt.Println("Ending adding AddImportantAttributesToLabels")
 
 	return graph, nil
 }
@@ -533,4 +536,15 @@ func printRelations(graph *gographviz.Graph) {
 		}
 		fmt.Println()
 	}
+}
+
+func ExpandNodeCreatedWithList(graph *gographviz.Graph) {
+	// Iterate over every node in the graph
+	// for each node
+	//  make use of tfstatreader.IsCreatedWithList
+	// to check if the node was created with a list
+	// if it was get the list of acutal names from tfstatreader.GetListOfNamesForResource
+	// using that list update the graph so for example for node azurerm_linux_vm
+	// we will have 2 nodes azurerm_linux_vm.[0] azurerm_linux_vm.[1] added to the graph with same relations as the initial node
+	// then the inital node is removed
 }

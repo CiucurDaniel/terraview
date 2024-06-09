@@ -40,6 +40,10 @@ func (h *TFStateHandler) GetImportantAttributes(resource string) ([]string, erro
 		return nil, fmt.Errorf("config not loaded")
 	}
 
+	// List
+	fmt.Println("Listing resources")
+	fmt.Println(h.State.List())
+
 	// Find the resource in the state
 	obj, err := h.State.Lookup(resource)
 	if err != nil {
@@ -71,4 +75,41 @@ func (h *TFStateHandler) GetImportantAttributes(resource string) ([]string, erro
 	}
 
 	return importantAttrs, nil
+}
+
+// IsCreatedWithList checks if a resource was created with a count or for_each.
+func (h *TFStateHandler) IsCreatedWithList(resource string) bool {
+	resourceList, err := h.State.List()
+	if err != nil {
+		log.Printf("error listing resources: %v", err)
+		return false
+	}
+
+	for _, res := range resourceList {
+		if strings.HasPrefix(res, resource+"[") || strings.HasPrefix(res, resource+"[\"") {
+			return true
+		}
+	}
+	return false
+}
+
+// GetListOfNamesForResource returns the list of actual names for a resource created with count or for_each.
+func (h *TFStateHandler) GetListOfNamesForResource(resource string) ([]string, error) {
+	resourceList, err := h.State.List()
+	if err != nil {
+		return nil, fmt.Errorf("error listing resources: %v", err)
+	}
+
+	var resourceNames []string
+	for _, res := range resourceList {
+		if strings.HasPrefix(res, resource+"[") || strings.HasPrefix(res, resource+"[\"") {
+			resourceNames = append(resourceNames, res)
+		}
+	}
+
+	if len(resourceNames) == 0 {
+		return nil, fmt.Errorf("no resources found for %s", resource)
+	}
+
+	return resourceNames, nil
 }
