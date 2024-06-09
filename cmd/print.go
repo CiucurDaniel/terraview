@@ -6,10 +6,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/CiucurDaniel/terraview/internal/render"
+	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
+	"path/filepath"
 
 	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/CiucurDaniel/terraview/internal/graph"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +26,7 @@ representing the path to the main.tf file. For example:
 
 terraview print .
 or
-terrraview print /users/Mike/terraform/`,
+terraview print /users/Mike/terraform/`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
@@ -35,8 +36,17 @@ terrraview print /users/Mike/terraform/`,
 			fmt.Println(fmt.Errorf("ERROR: Could not load config: %v", err))
 			return
 		}
+		cfg := config.GetConfig()
 
-		futureDiagram, err := graph.PrepareGraphForPrinting(path)
+		// Create a TFStateHandler
+		stateFilePath := filepath.Join(path, "terraform.tfstate")
+		handler, err := tfstatereader.NewTFStateHandler(stateFilePath)
+		if err != nil {
+			fmt.Println(fmt.Errorf("failed to create TFStateHandler: %v", err))
+			return
+		}
+
+		futureDiagram, err := graph.PrepareGraphForPrinting(path, cfg, handler)
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
 			return

@@ -3,6 +3,8 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"github.com/CiucurDaniel/terraview/internal/config"
+	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -68,8 +70,8 @@ func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 
 // PrepareGraphForPrinting is a facade function for preparing the graph for printing.
 // It obtains the graph data, adds image labels to nodes, and returns the modified graph.
-func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
-
+func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstatereader.TFStateHandler) (*gographviz.Graph, error) {
+	// Obtain the graph
 	graph, err := ObtainGraph(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
@@ -84,6 +86,11 @@ func PrepareGraphForPrinting(dirPath string) (*gographviz.Graph, error) {
 	SetGraphFontsize(graph, 26.0, 20.0)
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
+
+	err = AddImportantAttributesToLabels(graph, cfg, handler)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
+	}
 
 	return graph, nil
 }
@@ -240,6 +247,53 @@ func SetSubgraphMargins(graph *gographviz.Graph, maxDepth, baseMargin int) {
 
 // TODO: Create func which puts consecutive identical resources on same rank
 // similar to what was done here: https://stackoverflow.com/questions/58832678/how-to-separate-picture-and-label-of-a-node-with-graphviz
+
+// AddImportantAttributesToLabels traverses nodes in the graph, checks if the node is in the important attributes resource list,
+// calls GetImportantAttributes for the given node, and adds the result within the label field with newlines in between.
+func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config, handler *tfstatereader.TFStateHandler) error {
+	for _, node := range graph.Nodes.Nodes {
+		// Get the current label of the node
+		label := node.Attrs["label"]
+
+		// Remove existing quotes, if any
+		label = strings.Trim(label, `"`)
+
+		// Check if the node represents a resource
+		parts := strings.Split(label, ".")
+
+		// If the label is empty or doesn't contain a dot, skip the node
+		if len(parts) < 2 {
+			continue
+		}
+
+		resourceType := parts[0]
+		resourceName := parts[1]
+
+		// Check if the resource type is in the important attributes list
+		for _, resConfig := range cfg.ImportantAttributes {
+			if resConfig.Name == resourceType {
+				// Construct the resource identifier (e.g., azurerm_linux_virtual_machine.vm_1)
+				resourceIdentifier := fmt.Sprintf("%s.%s", resourceType, resourceName)
+
+				// Get important attributes for the resource
+				importantAttrs, err := handler.GetImportantAttributes(resourceIdentifier)
+				if err != nil {
+					return fmt.Errorf("failed to get important attributes for %s: %v", resourceIdentifier, err)
+				}
+
+				// Join important attributes with newlines
+				attrString := strings.Join(importantAttrs, "\\n")
+
+				// Update the label with important attributes
+				newLabel := fmt.Sprintf("%s\\n%s", label, attrString)
+				node.Attrs["label"] = fmt.Sprintf(`"%s"`, newLabel)
+				break
+			}
+		}
+	}
+
+	return nil
+}
 
 // CreateSubgraphsForGrouppingNodes creates a subgraph for each node that is a grouping node
 func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
