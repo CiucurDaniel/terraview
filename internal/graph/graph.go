@@ -3,6 +3,7 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -538,13 +539,122 @@ func printRelations(graph *gographviz.Graph) {
 	}
 }
 
-func ExpandNodeCreatedWithList(graph *gographviz.Graph) {
+// ExpandNodeCreatedWithList expands nodes created with count or for_each in the graph.
+func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.TFStateHandler) {
+	// Store the new nodes and edges to be added
+	var newNodes []gographviz.Node
+	var newEdges []gographviz.Edge
+
+	// Track relationships for new nodes
+	newParentToChildren := make(map[string]map[string]bool)
+	newChildToParents := make(map[string]map[string]bool)
+
 	// Iterate over every node in the graph
-	// for each node
-	//  make use of tfstatreader.IsCreatedWithList
-	// to check if the node was created with a list
-	// if it was get the list of acutal names from tfstatreader.GetListOfNamesForResource
-	// using that list update the graph so for example for node azurerm_linux_vm
-	// we will have 2 nodes azurerm_linux_vm.[0] azurerm_linux_vm.[1] added to the graph with same relations as the initial node
-	// then the inital node is removed
+	for _, node := range graph.Nodes.Nodes {
+		// Get the current label of the node
+		label := node.Attrs["label"]
+		label = strings.Trim(label, `"`)
+
+		// Check if the node was created with a list
+		if handler.IsCreatedWithList(label) {
+			// Get the list of actual names for the resource
+			resourceNames, err := handler.GetListOfNamesForResource(label)
+			if err != nil {
+				log.Printf("error getting list of names for resource %s: %v", label, err)
+				continue
+			}
+
+			// Create new nodes and edges based on the list of names
+			for _, resourceName := range resourceNames {
+				// Create a new node with the same attributes as the original node
+				newNodeName := strings.Replace(node.Name, label, resourceName, 1)
+				newNodeAttrs := gographviz.Attrs{}
+				for k, v := range node.Attrs {
+					newNodeAttrs[gographviz.Attr(k)] = v
+				}
+				newNodeAttrs["label"] = fmt.Sprintf(`"%s"`, resourceName)
+
+				// Add the new node to the list
+				newNodes = append(newNodes, gographviz.Node{
+					Name:  newNodeName,
+					Attrs: newNodeAttrs,
+				})
+
+				// Create edges from the new node to all the destinations of the original node
+				for _, edgeList := range graph.Edges.SrcToDsts[node.Name] {
+					for _, edge := range edgeList {
+						newEdges = append(newEdges, gographviz.Edge{
+							Src:   newNodeName,
+							Dst:   edge.Dst,
+							Attrs: edge.Attrs.Copy(),
+						})
+
+						// Update new relationships
+						if newParentToChildren[newNodeName] == nil {
+							newParentToChildren[newNodeName] = make(map[string]bool)
+						}
+						newParentToChildren[newNodeName][edge.Dst] = true
+					}
+				}
+
+				// Create edges to the new node from all the sources of the original node
+				for _, edgeList := range graph.Edges.DstToSrcs[node.Name] {
+					for _, edge := range edgeList {
+						newEdges = append(newEdges, gographviz.Edge{
+							Src:   edge.Src,
+							Dst:   newNodeName,
+							Attrs: edge.Attrs.Copy(),
+						})
+
+						// Update new relationships
+						if newChildToParents[newNodeName] == nil {
+							newChildToParents[newNodeName] = make(map[string]bool)
+						}
+						newChildToParents[newNodeName][edge.Src] = true
+					}
+				}
+			}
+
+			// Remove the original node and its edges
+			parentGraph := FindNodeParent(node.Name, graph)
+			graph.RemoveNode(parentGraph, node.Name)
+		}
+	}
+
+	// Add the new nodes and edges to the graph
+	for _, newNode := range newNodes {
+		// Convert newNode.Attrs to map[string]string
+		nodeAttrs := make(map[string]string)
+		for k, v := range newNode.Attrs {
+			nodeAttrs[string(k)] = v
+		}
+		graph.AddNode("", newNode.Name, nodeAttrs)
+	}
+	for _, newEdge := range newEdges {
+		// Convert newEdge.Attrs to map[string]string
+		edgeAttrs := make(map[string]string)
+		for k, v := range newEdge.Attrs {
+			edgeAttrs[string(k)] = v
+		}
+		graph.AddEdge(newEdge.Src, newEdge.Dst, true, edgeAttrs)
+	}
+
+	// Update relationships
+	for parent, children := range newParentToChildren {
+		if _, exists := graph.Relations.ParentToChildren[parent]; !exists {
+			graph.Relations.ParentToChildren[parent] = make(map[string]bool)
+		}
+		for child := range children {
+			graph.Relations.ParentToChildren[parent][child] = true
+		}
+	}
+
+	for child, parents := range newChildToParents {
+		if _, exists := graph.Relations.ChildToParents[child]; !exists {
+			graph.Relations.ChildToParents[child] = make(map[string]bool)
+		}
+		for parent := range parents {
+			graph.Relations.ChildToParents[child][parent] = true
+		}
+	}
 }
