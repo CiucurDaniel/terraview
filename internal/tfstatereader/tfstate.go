@@ -1,0 +1,74 @@
+package tfstatereader
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/CiucurDaniel/terraview/internal/config"
+	"github.com/fujiwara/tfstate-lookup/tfstate"
+)
+
+// TFStateHandler handles operations on the Terraform state file.
+type TFStateHandler struct {
+	StateFilePath string
+	State         *tfstate.TFState
+}
+
+// NewTFStateHandler creates a new TFStateHandler.
+func NewTFStateHandler(stateFilePath string) (*TFStateHandler, error) {
+	// Create a context
+	ctx := context.Background()
+
+	// Read the Terraform state file
+	state, err := tfstate.ReadFile(ctx, stateFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading tfstate file: %v", err)
+	}
+
+	return &TFStateHandler{
+		StateFilePath: stateFilePath,
+		State:         state,
+	}, nil
+}
+
+// GetImportantAttributes retrieves important attributes for a given resource.
+func (h *TFStateHandler) GetImportantAttributes(resource string) ([]string, error) {
+	cfg := config.GetConfig()
+	if cfg == nil {
+		return nil, fmt.Errorf("config not loaded")
+	}
+
+	// Find the resource in the state
+	obj, err := h.State.Lookup(resource)
+	if err != nil {
+		return nil, fmt.Errorf("resource %s not found in tfstate: %v", resource, err)
+	}
+
+	attributesMap := obj.Value.(map[string]interface{})
+
+	// Extract important attributes based on config
+	resourceType := strings.Split(resource, ".")[0]
+
+	var importantAttrs []string
+	for _, resConfig := range cfg.ImportantAttributes {
+		if resConfig.Name == resourceType {
+			for _, attr := range resConfig.Attributes {
+				// Directly access the attribute value from the attributes map
+				if value, ok := attributesMap[attr]; ok {
+					importantAttrs = append(importantAttrs, fmt.Sprintf("%s: %s", attr, value))
+				} else {
+					log.Printf("Attribute %s not found for resource %s", attr, resource)
+				}
+			}
+			break
+		}
+	}
+
+	if len(importantAttrs) == 0 {
+		return nil, fmt.Errorf("no important attributes found for resource %s", resource)
+	}
+
+	return importantAttrs, nil
+}
