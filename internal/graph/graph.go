@@ -368,10 +368,10 @@ func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
 			for _, subGraph := range graph.SubGraphs.Sorted() {
 				n := strings.TrimLeft(strings.Trim(subGraph.Name, `"`), "cluster_")
 				n = `"` + n + `"`
-				fmt.Println("checking if i have an edge between " + n + " and " + node)
+				fmt.Println("Step 2: checking if i have an edge between " + n + " and " + node)
 				if CheckEdgeExistence(n, node, graph) {
-					fmt.Println("--- graph " + n + " has to be child of the current found graph " + node)
-					fmt.Println("Setting " + fmt.Sprintf(`"%s"`, "cluster_"+n) + " as child subgraph of " + fmt.Sprintf(`"%s"`, "cluster_"+node))
+					fmt.Println("    graph " + n + " has to be child of the current found graph " + node)
+					fmt.Println("    setting " + fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(n, `"`)) + " as child subgraph of " + fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(node, `"`)))
 					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(node, `"`)), fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(n, `"`)), graph)
 				}
 			}
