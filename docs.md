@@ -187,3 +187,65 @@ func reverseDfsHelper(graph *gographviz.Graph, node string, visited map[string]b
 }
 
 ```
+
+
+### BFS traversal
+
+
+```go
+// findRootNode identifies the node with no incoming edges.
+func findRootNode(graph *gographviz.Graph) string {
+	inDegree := make(map[string]int)
+
+	// Initialize in-degree for all nodes
+	for _, node := range graph.Nodes.Nodes {
+		inDegree[node.Name] = 0
+	}
+
+	// Calculate in-degree for each node
+	for _, edgeList := range graph.Edges.Edges {
+		inDegree[edgeList.Dst]++
+	}
+
+	// Find the node with in-degree 0
+	for node, degree := range inDegree {
+		if degree == 0 {
+			return node
+		}
+	}
+
+	return ""
+}
+
+// BFS performs a breadth-first search on the graph starting from the given node.
+func BFS(graph *gographviz.Graph, startNode string) {
+	visited := make(map[string]bool)
+	queue := []string{startNode}
+
+	for len(queue) > 0 {
+		// Dequeue a node from the front of the queue
+		currentNode := queue[0]
+		queue = queue[1:]
+
+		// If the node has already been visited, skip it
+		if visited[currentNode] {
+			continue
+		}
+
+		// Mark the node as visited
+		visited[currentNode] = true
+
+		// Print the current node
+		fmt.Println("Visited:", currentNode)
+
+		// Enqueue all adjacent nodes that have not been visited
+		for _, edgeList := range graph.Edges.SrcToDsts[currentNode] {
+			for _, edge := range edgeList {
+				if !visited[edge.Dst] {
+					queue = append(queue, edge.Dst)
+				}
+			}
+		}
+	}
+}
+```
