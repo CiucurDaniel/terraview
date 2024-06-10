@@ -571,6 +571,9 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 				return
 			}
 
+			// Get the parent graph of the original node
+			parentGraph := FindNodeParent(node, graph)
+
 			// Create new nodes and edges based on the list of names
 			for _, resourceName := range resourceNames {
 				// Create a new node with the same attributes as the original node
@@ -582,7 +585,7 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 				newNodeAttrs["label"] = fmt.Sprintf(`"%s"`, resourceName)
 
 				// Add the new node to the graph
-				graph.AddNode("", newNodeName, attrsToMap(newNodeAttrs))
+				graph.AddNode(parentGraph, newNodeName, attrsToMap(newNodeAttrs))
 
 				// Create edges from the new node to all the destinations of the original node
 				for _, edgeList := range graph.Edges.SrcToDsts[node] {
@@ -610,7 +613,6 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 			}
 
 			// Remove the original node and its edges
-			parentGraph := FindNodeParent(node, graph)
 			graph.RemoveNode(parentGraph, node)
 		}
 
