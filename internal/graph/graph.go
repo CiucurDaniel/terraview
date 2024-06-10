@@ -91,17 +91,18 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	fmt.Println("..........")
 	ExpandNodeCreatedWithList(graph, handler)
 	CleanUpEdges(graph)
-	fmt.Println("DEBUG Graph after expanding list nodes")
-	fmt.Println(graph.String())
-	fmt.Println()
-	fmt.Println()
-	fmt.Println("EDGES AFTER")
-	printEdges(graph)
-	fmt.Println("..........")
-	fmt.Println("BFS TIME -------")
-	fmt.Println("Starting node:" + findRootNode(graph))
-	BFS(graph, findRootNode(graph))
-	fmt.Println("END BFS ---------")
+	//fmt.Println("DEBUG Graph after expanding list nodes")
+	//fmt.Println(graph.String())
+	//fmt.Println()
+	//fmt.Println()
+	//fmt.Println("EDGES AFTER")
+	//printEdges(graph)
+	//fmt.Println("..........")
+	//fmt.Println("BFS TIME -------")
+	//fmt.Println("Starting node:" + findRootNode(graph))
+	//BFS(graph, findRootNode(graph))
+	//fmt.Println("END BFS ---------")
+	BetaCreateSubgraphsForGroupingNodes(graph)
 	//CreateSubgraphsForGrouppingNodes(graph)
 	fmt.Println("Done with grouping nodes")
 	AddImageLabel(graph)
@@ -768,10 +769,11 @@ func findRootNode(graph *gographviz.Graph) string {
 	return ""
 }
 
-// BFS performs a breadth-first search on the graph starting from the given node.
-func BFS(graph *gographviz.Graph, startNode string) {
+// BFS performs a breadth-first search on the graph starting from the given node and returns the list of visited nodes.
+func BFS(graph *gographviz.Graph, startNode string) []string {
 	visited := make(map[string]bool)
 	queue := []string{startNode}
+	var visitedNodes []string
 
 	for len(queue) > 0 {
 		// Dequeue a node from the front of the queue
@@ -786,8 +788,8 @@ func BFS(graph *gographviz.Graph, startNode string) {
 		// Mark the node as visited
 		visited[currentNode] = true
 
-		// Print the current node
-		fmt.Println("Visited:", currentNode)
+		// Add the current node to the visited list
+		visitedNodes = append(visitedNodes, currentNode)
 
 		// Enqueue all parent nodes that have not been visited
 		for _, edge := range graph.Edges.DstToSrcs[currentNode] {
@@ -798,4 +800,42 @@ func BFS(graph *gographviz.Graph, startNode string) {
 			}
 		}
 	}
+
+	return visitedNodes
+}
+
+func BetaCreateSubgraphsForGroupingNodes(graph *gographviz.Graph) {
+
+	nodes := BFS(graph, findRootNode(graph))
+
+	fmt.Println("------------BetaCreateSubgraphsForGroupingNodes-------------------")
+
+	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"} // TODO: Use global config for this
+
+	for _, node := range nodes {
+		// node="azurerm_linux_virtual_machine.vm"
+		// azurerm_linux_virtual_machine is the part we need
+
+		cleanNodeName := strings.Trim(node, `"`)
+		if foundGroupingResource := contains(groupingLabels, strings.Split(cleanNodeName, ".")[0]); foundGroupingResource {
+
+			// 1. Prepare cluster name for node
+
+			clusterName := fmt.Sprintf(`"%s"`, "cluster_"+cleanNodeName)
+			parentGraph := FindNodeParent(node, graph)
+
+			// 2. Create the SubGraph
+			err := graph.AddSubGraph(parentGraph, clusterName, map[string]string{"label": clusterName})
+			if err != nil {
+				fmt.Println("ERROR: Got an error trying to add subgraph")
+			}
+
+			// 3. Add all reaching nodes as children of the new SubGraph
+			for _, reachingNode := range findAllReachingNodes(node, graph) {
+				SetChildOf(clusterName, reachingNode, graph)
+			}
+
+		}
+	}
+
 }
