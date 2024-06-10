@@ -86,9 +86,6 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
-	fmt.Println("EDGES BEFORE")
-	printEdges(graph)
-	fmt.Println("..........")
 	ExpandNodeCreatedWithList(graph, handler)
 	CleanUpEdges(graph)
 	BetaCreateSubgraphsForGroupingNodes(graph)
