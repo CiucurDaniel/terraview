@@ -744,22 +744,22 @@ func removeEdgeFromGraph(graph *gographviz.Graph, edge *gographviz.Edge) {
 	}
 }
 
-// findRootNode identifies the node with no incoming edges.
+// findRootNode identifies the node with no outgoing edges.
 func findRootNode(graph *gographviz.Graph) string {
-	inDegree := make(map[string]int)
+	outDegree := make(map[string]int)
 
-	// Initialize in-degree for all nodes
+	// Initialize out-degree for all nodes
 	for _, node := range graph.Nodes.Nodes {
-		inDegree[node.Name] = 0
+		outDegree[node.Name] = 0
 	}
 
-	// Calculate in-degree for each node
+	// Calculate out-degree for each node
 	for _, edge := range graph.Edges.Edges {
-		inDegree[edge.Dst]++
+		outDegree[edge.Src]++
 	}
 
-	// Find the node with in-degree 0
-	for node, degree := range inDegree {
+	// Find the node with out-degree 0
+	for node, degree := range outDegree {
 		if degree == 0 {
 			return node
 		}
@@ -789,11 +789,11 @@ func BFS(graph *gographviz.Graph, startNode string) {
 		// Print the current node
 		fmt.Println("Visited:", currentNode)
 
-		// Enqueue all adjacent nodes that have not been visited
-		for _, edge := range graph.Edges.SrcToDsts[currentNode] {
+		// Enqueue all parent nodes that have not been visited
+		for _, edge := range graph.Edges.DstToSrcs[currentNode] {
 			for _, e := range edge {
-				if !visited[e.Dst] {
-					queue = append(queue, e.Dst)
+				if !visited[e.Src] {
+					queue = append(queue, e.Src)
 				}
 			}
 		}
