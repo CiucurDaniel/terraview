@@ -86,6 +86,12 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
+	ExpandNodeCreatedWithList(graph, handler)
+	CleanUpEdges(graph)
+	fmt.Println("DEBUG Graph after expanding list nodes")
+	fmt.Println(graph.String())
+	fmt.Println()
+	fmt.Println()
 	CreateSubgraphsForGrouppingNodes(graph)
 	fmt.Println("Done with grouping nodes")
 	AddImageLabel(graph)
@@ -101,6 +107,8 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
 	}
 	fmt.Println("Ending adding AddImportantAttributesToLabels")
+
+	printRelations(graph)
 
 	return graph, nil
 }
@@ -286,6 +294,7 @@ func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config,
 				resourceIdentifier := fmt.Sprintf("%s.%s", resourceType, resourceName)
 
 				// Get important attributes for the resource
+				fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
 				importantAttrs, err := handler.GetImportantAttributes(resourceIdentifier)
 				if err != nil {
 					return fmt.Errorf("failed to get important attributes for %s: %v", resourceIdentifier, err)
@@ -539,122 +548,179 @@ func printRelations(graph *gographviz.Graph) {
 	}
 }
 
-// ExpandNodeCreatedWithList expands nodes created with count or for_each in the graph.
 func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.TFStateHandler) {
-	// Store the new nodes and edges to be added
-	var newNodes []gographviz.Node
-	var newEdges []gographviz.Edge
+	visited := make(map[string]bool)
 
-	// Track relationships for new nodes
-	newParentToChildren := make(map[string]map[string]bool)
-	newChildToParents := make(map[string]map[string]bool)
+	var dfs func(node string)
+	dfs = func(node string) {
+		if visited[node] {
+			return
+		}
+		visited[node] = true
 
-	// Iterate over every node in the graph
-	for _, node := range graph.Nodes.Nodes {
 		// Get the current label of the node
-		label := node.Attrs["label"]
+		label := graph.Nodes.Lookup[node].Attrs["label"]
 		label = strings.Trim(label, `"`)
 
-		// Check if the node was created with a list
+		// Check if the node was created with a list (count or for_each)
 		if handler.IsCreatedWithList(label) {
 			// Get the list of actual names for the resource
 			resourceNames, err := handler.GetListOfNamesForResource(label)
 			if err != nil {
 				log.Printf("error getting list of names for resource %s: %v", label, err)
-				continue
+				return
 			}
 
 			// Create new nodes and edges based on the list of names
 			for _, resourceName := range resourceNames {
 				// Create a new node with the same attributes as the original node
-				newNodeName := strings.Replace(node.Name, label, resourceName, 1)
+				newNodeName := strings.Replace(node, label, resourceName, 1)
 				newNodeAttrs := gographviz.Attrs{}
-				for k, v := range node.Attrs {
+				for k, v := range graph.Nodes.Lookup[node].Attrs {
 					newNodeAttrs[gographviz.Attr(k)] = v
 				}
 				newNodeAttrs["label"] = fmt.Sprintf(`"%s"`, resourceName)
 
-				// Add the new node to the list
-				newNodes = append(newNodes, gographviz.Node{
-					Name:  newNodeName,
-					Attrs: newNodeAttrs,
-				})
+				// Add the new node to the graph
+				graph.AddNode("", newNodeName, attrsToMap(newNodeAttrs))
 
 				// Create edges from the new node to all the destinations of the original node
-				for _, edgeList := range graph.Edges.SrcToDsts[node.Name] {
+				for _, edgeList := range graph.Edges.SrcToDsts[node] {
 					for _, edge := range edgeList {
-						newEdges = append(newEdges, gographviz.Edge{
+						newEdge := gographviz.Edge{
 							Src:   newNodeName,
 							Dst:   edge.Dst,
 							Attrs: edge.Attrs.Copy(),
-						})
-
-						// Update new relationships
-						if newParentToChildren[newNodeName] == nil {
-							newParentToChildren[newNodeName] = make(map[string]bool)
 						}
-						newParentToChildren[newNodeName][edge.Dst] = true
+						graph.AddEdge(newEdge.Src, newEdge.Dst, true, attrsToMap(newEdge.Attrs))
 					}
 				}
 
 				// Create edges to the new node from all the sources of the original node
-				for _, edgeList := range graph.Edges.DstToSrcs[node.Name] {
+				for _, edgeList := range graph.Edges.DstToSrcs[node] {
 					for _, edge := range edgeList {
-						newEdges = append(newEdges, gographviz.Edge{
+						newEdge := gographviz.Edge{
 							Src:   edge.Src,
 							Dst:   newNodeName,
 							Attrs: edge.Attrs.Copy(),
-						})
-
-						// Update new relationships
-						if newChildToParents[newNodeName] == nil {
-							newChildToParents[newNodeName] = make(map[string]bool)
 						}
-						newChildToParents[newNodeName][edge.Src] = true
+						graph.AddEdge(newEdge.Src, newEdge.Dst, true, attrsToMap(newEdge.Attrs))
 					}
 				}
 			}
 
 			// Remove the original node and its edges
-			parentGraph := FindNodeParent(node.Name, graph)
-			graph.RemoveNode(parentGraph, node.Name)
+			parentGraph := FindNodeParent(node, graph)
+			graph.RemoveNode(parentGraph, node)
+		}
+
+		// Visit all the children nodes
+		for _, edgeList := range graph.Edges.SrcToDsts[node] {
+			for _, edge := range edgeList {
+				dfs(edge.Dst)
+			}
 		}
 	}
 
-	// Add the new nodes and edges to the graph
-	for _, newNode := range newNodes {
-		// Convert newNode.Attrs to map[string]string
-		nodeAttrs := make(map[string]string)
-		for k, v := range newNode.Attrs {
-			nodeAttrs[string(k)] = v
+	// Start DFS from all top-level nodes
+	for _, node := range graph.Nodes.Nodes {
+		if !visited[node.Name] {
+			dfs(node.Name)
 		}
-		graph.AddNode("", newNode.Name, nodeAttrs)
 	}
-	for _, newEdge := range newEdges {
-		// Convert newEdge.Attrs to map[string]string
-		edgeAttrs := make(map[string]string)
-		for k, v := range newEdge.Attrs {
-			edgeAttrs[string(k)] = v
+}
+
+func attrsToMap(attrs gographviz.Attrs) map[string]string {
+	result := make(map[string]string)
+	for k, v := range attrs {
+		result[string(k)] = v
+	}
+	return result
+}
+
+func CleanUpEdges(graph *gographviz.Graph) {
+	visited := make(map[string]bool)
+
+	var dfs func(node string)
+	dfs = func(node string) {
+		if visited[node] {
+			return
 		}
-		graph.AddEdge(newEdge.Src, newEdge.Dst, true, edgeAttrs)
+		visited[node] = true
+
+		// Get the current label of the node
+		label := graph.Nodes.Lookup[node].Attrs["label"]
+		label = strings.Trim(label, `"`)
+
+		// Check if the node is a list node
+		var currentIndex string
+		if strings.Contains(label, "[") && strings.Contains(label, "]") {
+			currentIndex = label[strings.Index(label, "[")+1 : strings.Index(label, "]")]
+		}
+
+		// Remove edges based on indices or keys
+		var edgesToRemove []*gographviz.Edge
+		for _, edgeList := range graph.Edges.SrcToDsts[node] {
+			for _, edge := range edgeList {
+				dstLabel := graph.Nodes.Lookup[edge.Dst].Attrs["label"]
+				dstLabel = strings.Trim(dstLabel, `"`)
+
+				var dstIndex string
+				if strings.Contains(dstLabel, "[") && strings.Contains(dstLabel, "]") {
+					dstIndex = dstLabel[strings.Index(dstLabel, "[")+1 : strings.Index(dstLabel, "]")]
+				}
+
+				if currentIndex != "" && dstIndex != "" && currentIndex != dstIndex {
+					edgesToRemove = append(edgesToRemove, edge)
+				}
+			}
+		}
+
+		// Actually remove the edges
+		for _, edge := range edgesToRemove {
+			removeEdgeFromGraph(graph, edge)
+		}
+
+		// Visit all the children nodes
+		for _, edgeList := range graph.Edges.SrcToDsts[node] {
+			for _, edge := range edgeList {
+				dfs(edge.Dst)
+			}
+		}
 	}
 
-	// Update relationships
-	for parent, children := range newParentToChildren {
-		if _, exists := graph.Relations.ParentToChildren[parent]; !exists {
-			graph.Relations.ParentToChildren[parent] = make(map[string]bool)
+	// Start DFS from all top-level nodes
+	for _, node := range graph.Nodes.Nodes {
+		if !visited[node.Name] {
+			dfs(node.Name)
 		}
-		for child := range children {
-			graph.Relations.ParentToChildren[parent][child] = true
+	}
+}
+
+func removeEdgeFromGraph(graph *gographviz.Graph, edge *gographviz.Edge) {
+	// Remove the edge from SrcToDsts
+	srcEdges := graph.Edges.SrcToDsts[edge.Src][edge.Dst]
+	for i, e := range srcEdges {
+		if e.Dst == edge.Dst && e.Src == edge.Src {
+			graph.Edges.SrcToDsts[edge.Src][edge.Dst] = append(srcEdges[:i], srcEdges[i+1:]...)
+			break
 		}
 	}
 
-	for child, parents := range newChildToParents {
-		if _, exists := graph.Relations.ChildToParents[child]; !exists {
-			graph.Relations.ChildToParents[child] = make(map[string]bool)
+	// Remove the edge from DstToSrcs
+	dstEdges := graph.Edges.DstToSrcs[edge.Dst][edge.Src]
+	for i, e := range dstEdges {
+		if e.Dst == edge.Dst && e.Src == edge.Src {
+			graph.Edges.DstToSrcs[edge.Dst][edge.Src] = append(dstEdges[:i], dstEdges[i+1:]...)
+			break
 		}
-		for parent := range parents {
-			graph.Relations.ChildToParents[child][parent] = true
+	}
+
+	// Remove the edge from the main edges list
+	for i, e := range graph.Edges.Edges {
+		if e.Dst == edge.Dst && e.Src == edge.Src {
+			graph.Edges.Edges = append(graph.Edges.Edges[:i], graph.Edges.Edges[i+1:]...)
+			break
 		}
 	}
 }
