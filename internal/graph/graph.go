@@ -371,99 +371,6 @@ func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
 	}
 }
 
-// CheckEdgeExistence checks if there is an edge from node1 to node2 in the graph.
-func CheckEdgeExistence(node1, node2 string, graph *gographviz.Graph) bool {
-	// Check if node1 has edges directed towards node2
-	if edges, exists := graph.Edges.SrcToDsts[node1]; exists {
-		for _, edgeList := range edges {
-			for _, edge := range edgeList {
-				if edge.Dst == node2 {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// findAllReachingNodes performs a reverse DFS to find all nodes that can reach the given node.
-func findAllReachingNodes(targetNode string, graph *gographviz.Graph) []string {
-	visited := make(map[string]bool)
-	var result []string
-
-	var reverseDfs func(string)
-	reverseDfs = func(n string) {
-		if visited[n] {
-			return
-		}
-		visited[n] = true
-		result = append(result, n)
-
-		if edges, ok := graph.Edges.DstToSrcs[n]; ok {
-			for src := range edges {
-				reverseDfs(src)
-			}
-		}
-	}
-
-	reverseDfs(targetNode)
-	return result
-}
-
-// findAllReachableNodes performs a DFS to find all reachable nodes from the given node.
-func findAllReachableNodes(startNode string, graph *gographviz.Graph) []string {
-	visited := make(map[string]bool)
-	var result []string
-
-	var dfs func(string)
-	dfs = func(n string) {
-		if visited[n] {
-			return
-		}
-		visited[n] = true
-		result = append(result, n)
-
-		if edges, ok := graph.Edges.SrcToDsts[n]; ok {
-			for dst := range edges {
-				dfs(dst)
-			}
-		}
-	}
-
-	dfs(startNode)
-	return result
-}
-
-// printRelations nicely prints the Relations struct from gographviz.Graph
-func printRelations(graph *gographviz.Graph) {
-	relations := graph.Relations
-
-	fmt.Println("ParentToChildren relationships:")
-	for parent, children := range relations.ParentToChildren {
-		fmt.Printf("Parent: %s", parent)
-		for child := range children {
-			fmt.Printf("  Child: %s ;", child)
-		}
-		fmt.Println()
-	}
-
-	fmt.Println("\nChildToParents relationships:")
-	for child, parents := range relations.ChildToParents {
-		fmt.Printf("Child: %s", child)
-		for parent := range parents {
-			fmt.Printf("  Parent: %s ;", parent)
-		}
-		fmt.Println()
-	}
-}
-
-// printEdges prints all edges in the graph.
-func printEdges(graph *gographviz.Graph) {
-	for _, edge := range graph.Edges.Sorted() {
-		fmt.Printf("Edge: %s -> %s\n", edge.Src, edge.Dst)
-	}
-}
-
 func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.TFStateHandler) {
 	visited := make(map[string]bool)
 
@@ -734,4 +641,99 @@ func BetaCreateSubgraphsForGroupingNodes(graph *gographviz.Graph) {
 		}
 	}
 
+}
+
+// Helper function bellow, even if some are unused, they are used during a debug session
+
+// CheckEdgeExistence checks if there is an edge from node1 to node2 in the graph.
+func CheckEdgeExistence(node1, node2 string, graph *gographviz.Graph) bool {
+	// Check if node1 has edges directed towards node2
+	if edges, exists := graph.Edges.SrcToDsts[node1]; exists {
+		for _, edgeList := range edges {
+			for _, edge := range edgeList {
+				if edge.Dst == node2 {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// findAllReachingNodes performs a reverse DFS to find all nodes that can reach the given node.
+func findAllReachingNodes(targetNode string, graph *gographviz.Graph) []string {
+	visited := make(map[string]bool)
+	var result []string
+
+	var reverseDfs func(string)
+	reverseDfs = func(n string) {
+		if visited[n] {
+			return
+		}
+		visited[n] = true
+		result = append(result, n)
+
+		if edges, ok := graph.Edges.DstToSrcs[n]; ok {
+			for src := range edges {
+				reverseDfs(src)
+			}
+		}
+	}
+
+	reverseDfs(targetNode)
+	return result
+}
+
+// findAllReachableNodes performs a DFS to find all reachable nodes from the given node.
+func findAllReachableNodes(startNode string, graph *gographviz.Graph) []string {
+	visited := make(map[string]bool)
+	var result []string
+
+	var dfs func(string)
+	dfs = func(n string) {
+		if visited[n] {
+			return
+		}
+		visited[n] = true
+		result = append(result, n)
+
+		if edges, ok := graph.Edges.SrcToDsts[n]; ok {
+			for dst := range edges {
+				dfs(dst)
+			}
+		}
+	}
+
+	dfs(startNode)
+	return result
+}
+
+// printRelations nicely prints the Relations struct from gographviz.Graph
+func printRelations(graph *gographviz.Graph) {
+	relations := graph.Relations
+
+	fmt.Println("ParentToChildren relationships:")
+	for parent, children := range relations.ParentToChildren {
+		fmt.Printf("Parent: %s", parent)
+		for child := range children {
+			fmt.Printf("  Child: %s ;", child)
+		}
+		fmt.Println()
+	}
+
+	fmt.Println("\nChildToParents relationships:")
+	for child, parents := range relations.ChildToParents {
+		fmt.Printf("Child: %s", child)
+		for parent := range parents {
+			fmt.Printf("  Parent: %s ;", parent)
+		}
+		fmt.Println()
+	}
+}
+
+// printEdges prints all edges in the graph.
+func printEdges(graph *gographviz.Graph) {
+	for _, edge := range graph.Edges.Sorted() {
+		fmt.Printf("Edge: %s -> %s\n", edge.Src, edge.Dst)
+	}
 }
