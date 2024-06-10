@@ -41,8 +41,8 @@ func (h *TFStateHandler) GetImportantAttributes(resource string) ([]string, erro
 	}
 
 	// List
-	fmt.Println("Listing resources")
-	fmt.Println(h.State.List())
+	//fmt.Println("Listing resources")
+	//fmt.Println(h.State.List())
 
 	// Find the resource in the state
 	obj, err := h.State.Lookup(resource)
