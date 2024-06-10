@@ -91,20 +91,7 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	fmt.Println("..........")
 	ExpandNodeCreatedWithList(graph, handler)
 	CleanUpEdges(graph)
-	//fmt.Println("DEBUG Graph after expanding list nodes")
-	//fmt.Println(graph.String())
-	//fmt.Println()
-	//fmt.Println()
-	//fmt.Println("EDGES AFTER")
-	//printEdges(graph)
-	//fmt.Println("..........")
-	//fmt.Println("BFS TIME -------")
-	//fmt.Println("Starting node:" + findRootNode(graph))
-	//BFS(graph, findRootNode(graph))
-	//fmt.Println("END BFS ---------")
 	BetaCreateSubgraphsForGroupingNodes(graph)
-	//CreateSubgraphsForGrouppingNodes(graph)
-	fmt.Println("Done with grouping nodes")
 	AddImageLabel(graph)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
 	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
@@ -112,14 +99,10 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
 
-	fmt.Println("Starting to add AddImportantAttributesToLabels")
 	err = AddImportantAttributesToLabels(graph, cfg, handler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
 	}
-	fmt.Println("Ending adding AddImportantAttributesToLabels")
-
-	printRelations(graph)
 
 	return graph, nil
 }
@@ -305,7 +288,7 @@ func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config,
 				resourceIdentifier := fmt.Sprintf("%s.%s", resourceType, resourceName)
 
 				// Get important attributes for the resource
-				fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
+				// fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
 				importantAttrs, err := handler.GetImportantAttributes(resourceIdentifier)
 				if err != nil {
 					return fmt.Errorf("failed to get important attributes for %s: %v", resourceIdentifier, err)
@@ -323,91 +306,6 @@ func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config,
 	}
 
 	return nil
-}
-
-// CreateSubgraphsForGrouppingNodes creates a subgraph for each node that is a grouping node
-func CreateSubgraphsForGrouppingNodes(graph *gographviz.Graph) error {
-	DfsTraversal(graph)
-	return nil
-}
-
-// DfsTraversal performs a depth-first search traversal on the graph.
-func DfsTraversal(graph *gographviz.Graph) {
-	visited := make(map[string]bool)
-	for _, node := range graph.Nodes.Nodes {
-		if !visited[node.Name] {
-			dfsHelper(graph, node.Name, visited)
-		}
-	}
-}
-
-// dfsHelper is a recursive helper function for DFS traversal.
-func dfsHelper(graph *gographviz.Graph, node string, visited map[string]bool) {
-	// Mark the current node as visited.
-	visited[node] = true
-	//fmt.Println("Visited:", node)
-
-	// Add subgraph if the node is a groupping resource
-	label := strings.Trim(graph.Nodes.Lookup[node].Attrs["label"], `"`)
-
-	// TODO: Use global config for this
-	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"}
-
-	if IsResourceNode(label) {
-		// label="azurerm_linux_virtual_machine.vm"
-		// azurerm_linux_virtual_machine is the part we need
-		if foundGroupingResource := contains(groupingLabels, strings.Split(label, ".")[0]); foundGroupingResource {
-			fmt.Println("Visited a groupping node: " + node)
-
-			// special case because root graph name doesn't have quotes
-			parentNode := FindNodeParent(node, graph)
-			if parentNode != "G" {
-				parentNode = strings.Trim(parentNode, `"`)
-				parentNode = fmt.Sprintf(`"%s"`, parentNode)
-			}
-			// INFO: do not add only the resource type, add the full name, so later we can add the node inside this subGraph
-			err := graph.AddSubGraph(parentNode, fmt.Sprintf(`"%s"`, "cluster_"+label), map[string]string{"label": fmt.Sprintf(`"%s"`, label)})
-			if err != nil {
-				fmt.Println("ERROR: Got an error trying to add subgraph")
-			}
-
-			SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), node, graph)
-
-			rn := findAllReachingNodes(node, graph)
-
-			// Step 2
-			for _, subGraph := range graph.SubGraphs.Sorted() {
-				n := strings.TrimLeft(strings.Trim(subGraph.Name, `"`), "cluster_")
-				n = `"` + n + `"`
-				fmt.Println("Step 2: checking if i have an edge between " + n + " and " + node)
-				if CheckEdgeExistence(n, node, graph) {
-					fmt.Println("    graph " + n + " has to be child of the current found graph " + node)
-					fmt.Println("    setting " + fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(n, `"`)) + " as child subgraph of " + fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(node, `"`)))
-					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(node, `"`)), fmt.Sprintf(`"%s"`, "cluster_"+strings.Trim(n, `"`)), graph)
-				}
-			}
-
-			// Step 1
-			for _, reachingNode := range rn {
-				if reachingNodeParent := FindNodeParent(reachingNode, graph); reachingNodeParent == "G" {
-					fmt.Println("reaching node " + reachingNode + " will be set as child  of " + fmt.Sprintf(`"%s"`, "cluster_"+label))
-					SetChildOf(fmt.Sprintf(`"%s"`, "cluster_"+label), reachingNode, graph)
-				}
-			}
-
-		} else {
-			fmt.Println("Visited:", node)
-		}
-	}
-
-	// Get all the edges starting from the current node.
-	for _, edge := range graph.Edges.SrcToDsts[node] {
-		for _, dst := range edge {
-			if !visited[dst.Dst] {
-				dfsHelper(graph, dst.Dst, visited)
-			}
-		}
-	}
 }
 
 // change to be foundGroupingResource
@@ -431,7 +329,7 @@ func FindNodeParent(nodeName string, graph *gographviz.Graph) string {
 	}
 
 	for parent := range parents {
-		fmt.Printf("Parents of node %s is %s \n", nodeName, parent)
+		// fmt.Printf("Parents of node %s is %s \n", nodeName, parent)
 		nodeParent = parent
 	}
 
@@ -808,13 +706,11 @@ func BetaCreateSubgraphsForGroupingNodes(graph *gographviz.Graph) {
 
 	nodes := BFS(graph, findRootNode(graph))
 
-	fmt.Println("------------BetaCreateSubgraphsForGroupingNodes-------------------")
-
 	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"} // TODO: Use global config for this
 
 	for _, node := range nodes {
-		// node="azurerm_linux_virtual_machine.vm"
-		// azurerm_linux_virtual_machine is the part we need
+		// Node is "azurerm_linux_virtual_machine.vm"
+		// Needed part is azurerm_linux_virtual_machine
 
 		cleanNodeName := strings.Trim(node, `"`)
 		if foundGroupingResource := contains(groupingLabels, strings.Split(cleanNodeName, ".")[0]); foundGroupingResource {
