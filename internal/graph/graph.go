@@ -86,13 +86,23 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 
 	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
+	fmt.Println("EDGES BEFORE")
+	printEdges(graph)
+	fmt.Println("..........")
 	ExpandNodeCreatedWithList(graph, handler)
 	CleanUpEdges(graph)
 	fmt.Println("DEBUG Graph after expanding list nodes")
 	fmt.Println(graph.String())
 	fmt.Println()
 	fmt.Println()
-	CreateSubgraphsForGrouppingNodes(graph)
+	fmt.Println("EDGES AFTER")
+	printEdges(graph)
+	fmt.Println("..........")
+	fmt.Println("BFS TIME -------")
+	fmt.Println("Starting node:" + findRootNode(graph))
+	BFS(graph, findRootNode(graph))
+	fmt.Println("END BFS ---------")
+	//CreateSubgraphsForGrouppingNodes(graph)
 	fmt.Println("Done with grouping nodes")
 	AddImageLabel(graph)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
@@ -548,6 +558,13 @@ func printRelations(graph *gographviz.Graph) {
 	}
 }
 
+// printEdges prints all edges in the graph.
+func printEdges(graph *gographviz.Graph) {
+	for _, edge := range graph.Edges.Sorted() {
+		fmt.Printf("Edge: %s -> %s\n", edge.Src, edge.Dst)
+	}
+}
+
 func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.TFStateHandler) {
 	visited := make(map[string]bool)
 
@@ -723,6 +740,62 @@ func removeEdgeFromGraph(graph *gographviz.Graph, edge *gographviz.Edge) {
 		if e.Dst == edge.Dst && e.Src == edge.Src {
 			graph.Edges.Edges = append(graph.Edges.Edges[:i], graph.Edges.Edges[i+1:]...)
 			break
+		}
+	}
+}
+
+// findRootNode identifies the node with no incoming edges.
+func findRootNode(graph *gographviz.Graph) string {
+	inDegree := make(map[string]int)
+
+	// Initialize in-degree for all nodes
+	for _, node := range graph.Nodes.Nodes {
+		inDegree[node.Name] = 0
+	}
+
+	// Calculate in-degree for each node
+	for _, edge := range graph.Edges.Edges {
+		inDegree[edge.Dst]++
+	}
+
+	// Find the node with in-degree 0
+	for node, degree := range inDegree {
+		if degree == 0 {
+			return node
+		}
+	}
+
+	return ""
+}
+
+// BFS performs a breadth-first search on the graph starting from the given node.
+func BFS(graph *gographviz.Graph, startNode string) {
+	visited := make(map[string]bool)
+	queue := []string{startNode}
+
+	for len(queue) > 0 {
+		// Dequeue a node from the front of the queue
+		currentNode := queue[0]
+		queue = queue[1:]
+
+		// If the node has already been visited, skip it
+		if visited[currentNode] {
+			continue
+		}
+
+		// Mark the node as visited
+		visited[currentNode] = true
+
+		// Print the current node
+		fmt.Println("Visited:", currentNode)
+
+		// Enqueue all adjacent nodes that have not been visited
+		for _, edge := range graph.Edges.SrcToDsts[currentNode] {
+			for _, e := range edge {
+				if !visited[e.Dst] {
+					queue = append(queue, e.Dst)
+				}
+			}
 		}
 	}
 }
