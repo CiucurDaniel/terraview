@@ -1,6 +1,7 @@
 grouping_elements:
   - azurerm_subnet
   - azurerm_virtual_network
+  - azurerm_resource_group
   # Add more elements as needed
 
 important_attributes:
