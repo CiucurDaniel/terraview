@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Graphviz version 10.0.1
-RUN apt install graphviz=10.0.1
+RUN apt-get install graphviz
 
 COPY --from=builder /app/terraview /usr/local/bin/terraview
 
