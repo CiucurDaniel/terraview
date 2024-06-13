@@ -376,7 +376,7 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 	for _, n := range copyOfNodes {
 
 		node := n.Name
-		fmt.Println("Current node: " + node)
+		// fmt.Println("Current node: " + node)
 		// Get the current label of the node
 		label := graph.Nodes.Lookup[node].Attrs["label"]
 		label = strings.Trim(label, `"`)
