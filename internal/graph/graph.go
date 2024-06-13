@@ -369,21 +369,21 @@ func SetChildOf(graphName string, nodeName string, graph *gographviz.Graph) {
 }
 
 func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.TFStateHandler) {
-	visited := make(map[string]bool)
 
-	var dfs func(node string)
-	dfs = func(node string) {
-		if visited[node] {
-			return
-		}
-		visited[node] = true
+	copyOfNodes := graph.Nodes.Sorted()
+	for _, n := range copyOfNodes {
 
+		node := n.Name
+		fmt.Println("Current node: " + node)
 		// Get the current label of the node
 		label := graph.Nodes.Lookup[node].Attrs["label"]
 		label = strings.Trim(label, `"`)
 
 		// Check if the node was created with a list (count or for_each)
 		if handler.IsCreatedWithList(label) {
+
+			fmt.Println("DEBUG: found node created with list " + node)
+
 			// Get the list of actual names for the resource
 			resourceNames, err := handler.GetListOfNamesForResource(label)
 			if err != nil {
@@ -436,20 +436,8 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 			graph.RemoveNode(parentGraph, node)
 		}
 
-		// Visit all the children nodes
-		for _, edgeList := range graph.Edges.SrcToDsts[node] {
-			for _, edge := range edgeList {
-				dfs(edge.Dst)
-			}
-		}
 	}
 
-	// Start DFS from all top-level nodes
-	for _, node := range graph.Nodes.Nodes {
-		if !visited[node.Name] {
-			dfs(node.Name)
-		}
-	}
 }
 
 func attrsToMap(attrs gographviz.Attrs) map[string]string {
