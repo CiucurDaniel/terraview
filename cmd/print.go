@@ -26,9 +26,9 @@ var printCmd = &cobra.Command{
 	Long: `Print diagram from terraform code. This command receives exactly one arg 
 representing the path to the main.tf file. For example:
 
-terraview print .
+terraview print .\terraform_example\ --format png
 or
-terraview print /users/Mike/terraform/`,
+terraview print ..\demo-company-project\terraform\ --format dot --config-file terraview.yaml --url "azurerm://@terraform-state/project0terraform0state/terraform-state/project"`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
