@@ -14,11 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Graphviz version 10.0.1
-RUN curl -SL https://graphviz.gitlab.io/pub/graphviz/stable/ubuntu/ubuntu-22.04/graphviz_10.0.1-1_amd64.deb -o graphviz.deb \
-    && apt-get update \
-    && apt-get install -y ./graphviz.deb \
-    && rm graphviz.deb \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt install graphviz=10.0.1
 
 COPY --from=builder /app/terraview /usr/local/bin/terraview
 
