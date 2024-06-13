@@ -92,7 +92,7 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	AddImageLabel(graph)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
 	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
-	SetGraphFontsize(graph, 26.0, 20.0)
+	SetGraphFontsize(graph, 28.0, 22.0)
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
 	HideEdgesBetweenSubgraphs(graph)
@@ -119,7 +119,7 @@ func SetGraphAttrs(graph *gographviz.Graph) {
 	graph.Attrs["compound"] = `"true"`
 	graph.Attrs["rankdir"] = `"BT"`
 	graph.Attrs["newrank"] = `"true"`
-	graph.Attrs["nodesep"] = `"4"`
+	graph.Attrs["nodesep"] = `"1.5"`
 	graph.Attrs["ranksep"] = `"1.5"`
 
 	// TODO: For each subgraph set labelloc="b";
