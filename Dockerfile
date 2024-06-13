@@ -7,7 +7,7 @@ COPY . .
 RUN go mod tidy
 RUN go build -o terraview
 
-FROM ubuntu:22.04
+FROM ubuntu:24.10
 
 RUN apt-get -y update
 
