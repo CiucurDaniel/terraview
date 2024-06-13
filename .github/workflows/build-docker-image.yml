@@ -2,9 +2,10 @@ name: Build Docker Image
 
 # Trigger the workflow on push events to the 'reset' branch
 on:
-  push:
+  push: 
     branches:
       - reset
+  workflow_dispatch:
 
 jobs:
   build:
