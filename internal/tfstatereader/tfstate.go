@@ -27,7 +27,6 @@ func NewTFStateHandler(stateFilePath string) (*TFStateHandler, error) {
 	if isURL(stateFilePath) {
 		state, err = tfstate.ReadURL(ctx, stateFilePath)
 	} else {
-		fmt.Println("Is local file: " + stateFilePath)
 		state, err = tfstate.ReadFile(ctx, stateFilePath)
 	}
 
