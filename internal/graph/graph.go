@@ -3,7 +3,10 @@ package graph
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -16,9 +19,6 @@ import (
 const (
 	NODE_LABEL_LOCATION  = "b"
 	GRAPH_LABEL_LOCATION = "b"
-
-	// GlobalImagePath is the path where the images are stored.
-	GlobalImagePath = "internal/icons/azurerm"
 )
 
 // KnownProviders is a constant array containing known provider prefixes
@@ -77,19 +77,18 @@ func ObtainGraph(dirPath string) (*gographviz.Graph, error) {
 
 // PrepareGraphForPrinting is a facade function for preparing the graph for printing.
 // It obtains the graph data, adds image labels to nodes, and returns the modified graph.
-func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstatereader.TFStateHandler) (*gographviz.Graph, error) {
+func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstatereader.TFStateHandler, assetsDir string) (*gographviz.Graph, error) {
 	// Obtain the graph
 	graph, err := ObtainGraph(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain graph data: %v", err)
 	}
 
-	SetGraphGlobalImagePath(graph, GlobalImagePath)
 	SetGraphAttrs(graph)
 	ExpandNodeCreatedWithList(graph, handler)
 	CleanUpEdges(graph)
 	BetaCreateSubgraphsForGroupingNodes(graph)
-	AddImageLabel(graph)
+	AddImageLabel(graph, assetsDir)
 	PositionNodeLabelTo(graph, NODE_LABEL_LOCATION)
 	PositionGraphLabelTo(graph, GRAPH_LABEL_LOCATION)
 	SetGraphFontsize(graph, 28.0, 22.0)
@@ -103,11 +102,6 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	}
 
 	return graph, nil
-}
-
-// SetGraphGlobalImagePath sets the global image path for the graph.
-func SetGraphGlobalImagePath(graph *gographviz.Graph, path string) {
-	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, path))
 }
 
 // SetGraphAttrs func will set:
@@ -137,9 +131,13 @@ func IsResourceNode(label string) bool {
 	return false
 }
 
-// AddImageLabel appends an image label to every resource node in the graph where the value
-// is constructed based on the label of the node.
-func AddImageLabel(graph *gographviz.Graph) {
+func AddImageLabel(graph *gographviz.Graph, tempDir string) {
+	// Create a map to track unique resources and their local image paths
+	imageMap := make(map[string]string)
+
+	// Set the global image path attribute for the graph
+	graph.Attrs.Add("imagepath", fmt.Sprintf(`"%s"`, tempDir))
+
 	for _, node := range graph.Nodes.Nodes {
 		// Get the current label of the node
 		label := node.Attrs["label"]
@@ -157,11 +155,29 @@ func AddImageLabel(graph *gographviz.Graph) {
 				continue
 			}
 
-			// Construct the image label path
-			imageLabel := filepath.Join(parts[0] + ".png")
+			// Construct the image name
+			imageName := parts[0] + ".png"
+
+			// Check if the image has already been downloaded
+			localImagePath, exists := imageMap[imageName]
+			if !exists {
+				// Construct the image URL and local path
+				imageURL := fmt.Sprintf("https://raw.githubusercontent.com/CiucurDaniel/terraview-assets/main/icons/azurerm/%s", imageName)
+				localImagePath = filepath.Join(tempDir, imageName)
+
+				// Download the image
+				err := downloadImage(imageURL, localImagePath)
+				if err != nil {
+					fmt.Println("Error downloading image:", err)
+					continue
+				}
+
+				// Store the local image path in the map
+				imageMap[imageName] = imageName // Store only the image name
+			}
 
 			// Set the image label attribute
-			node.Attrs["image"] = fmt.Sprintf(`"%s"`, imageLabel)
+			node.Attrs["image"] = fmt.Sprintf(`"%s"`, imageName)
 
 			// Set shape to none so the icon is not surrounded by a box
 			node.Attrs["shape"] = `"none"`
@@ -742,4 +758,21 @@ func printEdges(graph *gographviz.Graph) {
 	for _, edge := range graph.Edges.Sorted() {
 		fmt.Printf("Edge: %s -> %s\n", edge.Src, edge.Dst)
 	}
+}
+
+func downloadImage(url, filePath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/CiucurDaniel/terraview/internal/config"
@@ -56,7 +57,14 @@ terraview print ..\demo-company-project\terraform\ --format dot --config-file te
 			return
 		}
 
-		futureDiagram, err := graph.PrepareGraphForPrinting(path, cfg, handler)
+		// Create a temporary directory to store downloaded images
+		tempDir, err := os.MkdirTemp("", "graphviz-images")
+		if err != nil {
+			fmt.Errorf("error creating temp directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+
+		futureDiagram, err := graph.PrepareGraphForPrinting(path, cfg, handler, tempDir)
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to prepare graph for printing: %v", err))
 			return
