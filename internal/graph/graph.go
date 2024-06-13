@@ -95,9 +95,7 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	SetGraphFontsize(graph, 26.0, 20.0)
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
-
-	// TODO: Implement me
-	// HideEdgesBetweenSubgraphs(graph)
+	HideEdgesBetweenSubgraphs(graph)
 
 	err = AddImportantAttributesToLabels(graph, cfg, handler)
 	if err != nil {
@@ -629,6 +627,27 @@ func BetaCreateSubgraphsForGroupingNodes(graph *gographviz.Graph) {
 		}
 	}
 
+}
+
+// HideEdgesBetweenSubgraphs visually hides edges between a grouping resource and another parent subgraph
+func HideEdgesBetweenSubgraphs(graph *gographviz.Graph) {
+	for _, edgeList := range graph.Edges.Edges {
+		if isGroupingResource(edgeList.Src) {
+			edgeList.Attrs.Add("style", "invis")
+		}
+	}
+}
+
+// isGroupingResource checks is a node is a grouping resource
+// by verifying if the current node resource type is contained in the config.GroupingElement
+func isGroupingResource(node string) bool {
+	groupingLabels := config.GetConfig().GroupingElements
+
+	cleanNodeName := strings.Trim(node, `"`)
+	if foundGroupingResource := contains(groupingLabels, strings.Split(cleanNodeName, ".")[0]); foundGroupingResource {
+		return true
+	}
+	return false
 }
 
 // Helper function bellow, even if some are unused, they are used during a debug session
