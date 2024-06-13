@@ -285,7 +285,7 @@ func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config,
 				resourceIdentifier := fmt.Sprintf("%s.%s", resourceType, resourceName)
 
 				// Get important attributes for the resource
-				fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
+				// fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
 				importantAttrs, err := handler.GetImportantAttributes(resourceIdentifier)
 				if err != nil {
 					return fmt.Errorf("failed to get important attributes for %s: %v", resourceIdentifier, err)
@@ -382,7 +382,7 @@ func ExpandNodeCreatedWithList(graph *gographviz.Graph, handler *tfstatereader.T
 		// Check if the node was created with a list (count or for_each)
 		if handler.IsCreatedWithList(label) {
 
-			fmt.Println("DEBUG: found node created with list " + node)
+			// fmt.Println("DEBUG: found node created with list " + node)
 
 			// Get the list of actual names for the resource
 			resourceNames, err := handler.GetListOfNamesForResource(label)
