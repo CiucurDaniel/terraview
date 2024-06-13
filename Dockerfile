@@ -9,12 +9,10 @@ RUN go build -o terraview
 
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get -y update
 
 # Install Graphviz version 10.0.1
-RUN apt-get install graphviz
+RUN apt-get install -y graphviz
 
 COPY --from=builder /app/terraview /usr/local/bin/terraview
 
