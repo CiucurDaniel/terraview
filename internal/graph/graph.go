@@ -127,6 +127,7 @@ func SetGraphAttrs(graph *gographviz.Graph) {
 
 // IsResourceNode checks if the label represents a resource node based on the known provider prefixes.
 // It returns true if the label starts with any of the known prefixes, otherwise false.
+// FIXME: Might not be needed in current Terrraform versions
 func IsResourceNode(label string) bool {
 	for _, provider := range KnownProviders {
 		if strings.HasPrefix(label, provider+"_") {
@@ -599,17 +600,15 @@ func BetaCreateSubgraphsForGroupingNodes(graph *gographviz.Graph) {
 
 	nodes := BFS(graph, findRootNode(graph))
 
-	var groupingLabels = []string{"azurerm_virtual_network", "azurerm_resource_group", "azurerm_subnet"} // TODO: Use global config for this
-
 	for _, node := range nodes {
 		// Node is "azurerm_linux_virtual_machine.vm"
 		// Needed part is azurerm_linux_virtual_machine
 
-		cleanNodeName := strings.Trim(node, `"`)
-		if foundGroupingResource := contains(groupingLabels, strings.Split(cleanNodeName, ".")[0]); foundGroupingResource {
+		if foundGroupingResource := isGroupingResource(node); foundGroupingResource {
 
 			// 1. Prepare cluster name for node
 
+			cleanNodeName := strings.Trim(node, `"`)
 			clusterName := fmt.Sprintf(`"%s"`, "cluster_"+cleanNodeName)
 			parentGraph := FindNodeParent(node, graph)
 
