@@ -11,7 +11,8 @@ FROM ubuntu:24.10
 
 RUN apt-get -y update
 
-RUN apt-get install -y curl unzip
+# Install required packages
+RUN apt-get install -y curl unzip git
 
 # Install Graphviz version 10.0.1
 RUN apt-get install -y graphviz
