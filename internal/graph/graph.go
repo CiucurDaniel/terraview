@@ -96,6 +96,9 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 	AddMarginToNodes(graph, 1.5)
 	SetSubgraphMargins(graph, CalculateMaxDepth(graph), 10)
 
+	// TODO: Implement me
+	// HideEdgesBetweenSubgraphs(graph)
+
 	err = AddImportantAttributesToLabels(graph, cfg, handler)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
