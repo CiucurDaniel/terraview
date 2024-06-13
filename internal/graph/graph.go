@@ -285,7 +285,7 @@ func AddImportantAttributesToLabels(graph *gographviz.Graph, cfg *config.Config,
 				resourceIdentifier := fmt.Sprintf("%s.%s", resourceType, resourceName)
 
 				// Get important attributes for the resource
-				// fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
+				fmt.Println("DEBUG: Will get important attributes for " + resourceIdentifier)
 				importantAttrs, err := handler.GetImportantAttributes(resourceIdentifier)
 				if err != nil {
 					return fmt.Errorf("failed to get important attributes for %s: %v", resourceIdentifier, err)
