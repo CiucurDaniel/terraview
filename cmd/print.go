@@ -5,18 +5,19 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/CiucurDaniel/terraview/internal/render"
-	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
 	"path/filepath"
 
 	"github.com/CiucurDaniel/terraview/internal/config"
 	"github.com/CiucurDaniel/terraview/internal/graph"
+	"github.com/CiucurDaniel/terraview/internal/render"
+	"github.com/CiucurDaniel/terraview/internal/tfstatereader"
 	"github.com/spf13/cobra"
 )
 
-// Define the format and url flags
+// Define the format, url, and config-file flags
 var format string
 var url string
+var configFile string
 
 // printCmd represents the print command
 var printCmd = &cobra.Command{
@@ -32,10 +33,13 @@ terraview print /users/Mike/terraform/`,
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
 
-		err := config.LoadConfig("terraview.yaml")
-		if err != nil {
-			fmt.Println(fmt.Errorf("ERROR: Could not load config: %v", err))
-			return
+		// Load the configuration if a config-file path is provided
+		if configFile != "" {
+			err := config.LoadConfig(configFile)
+			if err != nil {
+				fmt.Println(fmt.Errorf("ERROR: Could not load config: %v", err))
+				return
+			}
 		}
 		cfg := config.GetConfig()
 
@@ -79,6 +83,9 @@ func init() {
 
 	// Define the url flag
 	printCmd.Flags().StringVarP(&url, "url", "u", "", "URL to the terraform state file (local file, http/https, s3, remote, gs, azurerm). Defaults to local if flag omitted")
+
+	// Define the config-file flag
+	printCmd.Flags().StringVarP(&configFile, "config-file", "c", "", "Path to the configuration file. Defaults to built-in config if flag omitted")
 
 	// Here you will define your flags and configuration settings.
 

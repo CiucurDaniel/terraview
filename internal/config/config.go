@@ -21,14 +21,40 @@ type Config struct {
 }
 
 var (
-	// globalConfig is the instance of Config that will be used globally
-	globalConfig *Config
+	// Initialize globalConfig with default values
+	globalConfig = &Config{
+		GroupingElements: []string{
+			"azurerm_subnet",
+			"azurerm_virtual_network",
+			"azurerm_resource_group",
+		},
+		ImportantAttributes: []Resource{
+			{
+				Name:       "azurerm_linux_virtual_machine",
+				Attributes: []string{"size"},
+			},
+			{
+				Name:       "azurerm_subnet",
+				Attributes: []string{"address_prefixes"},
+			},
+			{
+				Name:       "azurerm_virtual_network",
+				Attributes: []string{"address_space"},
+			},
+			{
+				Name:       "azurerm_resource_group",
+				Attributes: []string{"location"},
+			},
+		},
+	}
 	// mutex to ensure thread-safe access to globalConfig
 	mutex sync.Mutex
 )
 
 // LoadConfig loads the configuration from a YAML file into the globalConfig variable
 func LoadConfig(filePath string) error {
+	fmt.Println("INFO: User provided custom configuration at " + filePath)
+
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("error reading config file: %v", err)
