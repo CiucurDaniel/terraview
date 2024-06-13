@@ -21,8 +21,16 @@ func NewTFStateHandler(stateFilePath string) (*TFStateHandler, error) {
 	// Create a context
 	ctx := context.Background()
 
-	// Read the Terraform state file
-	state, err := tfstate.ReadFile(ctx, stateFilePath)
+	// Read the Terraform state file from the appropriate source
+	var state *tfstate.TFState
+	var err error
+	if isURL(stateFilePath) {
+		state, err = tfstate.ReadURL(ctx, stateFilePath)
+	} else {
+		fmt.Println("Is local file: " + stateFilePath)
+		state, err = tfstate.ReadFile(ctx, stateFilePath)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("error reading tfstate file: %v", err)
 	}
@@ -31,6 +39,13 @@ func NewTFStateHandler(stateFilePath string) (*TFStateHandler, error) {
 		StateFilePath: stateFilePath,
 		State:         state,
 	}, nil
+}
+
+// isURL checks if the provided string is a URL.
+func isURL(path string) bool {
+	return strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") ||
+		strings.HasPrefix(path, "s3://") || strings.HasPrefix(path, "gs://") ||
+		strings.HasPrefix(path, "azurerm://") || strings.HasPrefix(path, "remote://")
 }
 
 // GetImportantAttributes retrieves important attributes for a given resource.

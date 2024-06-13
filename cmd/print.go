@@ -14,8 +14,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Define the format flag
+// Define the format and url flags
 var format string
+var url string
 
 // printCmd represents the print command
 var printCmd = &cobra.Command{
@@ -38,8 +39,13 @@ terraview print /users/Mike/terraform/`,
 		}
 		cfg := config.GetConfig()
 
+		// Determine the state file path from the url flag or the path argument
+		stateFilePath := url
+		if stateFilePath == "" {
+			stateFilePath = filepath.Join(path, "terraform.tfstate")
+		}
+
 		// Create a TFStateHandler
-		stateFilePath := filepath.Join(path, "terraform.tfstate")
 		handler, err := tfstatereader.NewTFStateHandler(stateFilePath)
 		if err != nil {
 			fmt.Println(fmt.Errorf("failed to create TFStateHandler: %v", err))
@@ -70,6 +76,9 @@ func init() {
 
 	// Define the format flag
 	printCmd.Flags().StringVarP(&format, "format", "f", "png", "Output format (png, jpg, svg, pdf, dot)")
+
+	// Define the url flag
+	printCmd.Flags().StringVarP(&url, "url", "u", "", "URL to the terraform state file (local file, http/https, s3, remote, gs, azurerm). Defaults to local if flag omitted")
 
 	// Here you will define your flags and configuration settings.
 
