@@ -101,6 +101,9 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
 	}
 
+	// TODO: implement me
+	// RemoveTextFromGrouppingNodes()
+
 	return graph, nil
 }
 
@@ -115,6 +118,7 @@ func SetGraphAttrs(graph *gographviz.Graph) {
 	graph.Attrs["newrank"] = `"true"`
 	graph.Attrs["nodesep"] = `"1.5"`
 	graph.Attrs["ranksep"] = `"1.5"`
+	graph.Attrs["pad"] = `"0.9"`
 
 	// TODO: For each subgraph set labelloc="b";
 }
