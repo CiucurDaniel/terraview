@@ -101,8 +101,9 @@ func PrepareGraphForPrinting(dirPath string, cfg *config.Config, handler *tfstat
 		return nil, fmt.Errorf("failed to add important attributes to labels: %v", err)
 	}
 
-	// TODO: implement me
-	// RemoveTextFromGrouppingNodes()
+	CopyLabelsFromGroupingNodesToSubgraph(graph)
+	RemoveResourceTypeFromLabels(graph)
+	HideLabelsFromGroupingNodes(graph)
 
 	return graph, nil
 }
@@ -238,6 +239,83 @@ func SetGraphFontsize(graph *gographviz.Graph, graphValue, nodeValue float32) {
 	// Iterate over every graph/subgraph in the graph
 	for _, graph := range graph.SubGraphs.SubGraphs {
 		graph.Attrs["fontsize"] = fmt.Sprintf(`"%.1f"`, graphValue)
+	}
+}
+
+func HideLabelsFromGroupingNodes(graph *gographviz.Graph) {
+	for _, node := range graph.Nodes.Nodes {
+		if isGroupingResource(node.Name) {
+			node.Attrs.Add("label", `""`)
+		}
+	}
+}
+
+func CopyLabelsFromGroupingNodesToSubgraph(graph *gographviz.Graph) {
+	for _, subgraph := range graph.SubGraphs.SubGraphs {
+		cleanSubgraphName := strings.Replace(subgraph.Name, `"cluster_`, `"`, 1)
+		if isGroupingResource(cleanSubgraphName) {
+			node, exists := graph.Nodes.Lookup[cleanSubgraphName]
+			if exists {
+				// Move the label from the node to the subgraph
+				subgraph.Attrs.Add("label", node.Attrs["label"])
+			}
+		}
+	}
+}
+
+func RemoveResourceTypeFromLabels(graph *gographviz.Graph) {
+	for _, node := range graph.Nodes.Nodes {
+		label := node.Attrs["label"]
+		label = strings.Trim(label, `"`)
+
+		if IsResourceNode(label) {
+			// Split the label by newline to get the first part
+			labelParts := strings.SplitN(label, "\\n", 2)
+			resourcePart := labelParts[0]
+
+			// Split the resource part by dot to remove the resource type prefix
+			resourceParts := strings.Split(resourcePart, ".")
+			if len(resourceParts) < 2 {
+				continue
+			}
+
+			// Cut any potential indexes
+			newLabel := strings.Split(resourceParts[1], "[")[0]
+
+			// Add the remaining parts back if they exist
+			if len(labelParts) > 1 {
+				newLabel = fmt.Sprintf("%s\n%s", newLabel, labelParts[1])
+			}
+
+			node.Attrs["label"] = fmt.Sprintf(`"%s"`, newLabel)
+		}
+	}
+
+	for _, graph := range graph.SubGraphs.SubGraphs {
+		label := graph.Attrs["label"]
+		label = strings.Trim(label, `"`)
+
+		if IsResourceNode(label) {
+			// Split the label by newline to get the first part
+			labelParts := strings.SplitN(label, "\\n", 2)
+			resourcePart := labelParts[0]
+
+			// Split the resource part by dot to remove the resource type prefix
+			resourceParts := strings.Split(resourcePart, ".")
+			if len(resourceParts) < 2 {
+				continue
+			}
+
+			// Cut any potential indexes
+			newLabel := strings.Split(resourceParts[1], "[")[0]
+
+			// Add the remaining parts back if they exist
+			if len(labelParts) > 1 {
+				newLabel = fmt.Sprintf("%s\n%s", newLabel, labelParts[1])
+			}
+
+			graph.Attrs["label"] = fmt.Sprintf(`"%s"`, newLabel)
+		}
 	}
 }
 
