@@ -42,7 +42,7 @@ dot -Tjpeg diagram.dot -o diagram.jpg
 
 ## Current example of a generaed diagram 
 
-![Simple diagram](diagram_20240614_005538.png)
+![Simple diagram](diagram_20240614_172636.png)
 
 ## TODOS
 
