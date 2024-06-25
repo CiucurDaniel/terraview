@@ -1,5 +1,7 @@
 # Terraview
 
+![Build status](https://github.com/CiucurDaniel/landscape/actions/workflows/build-docker-image.yml/badge.svg)
+
 A CLI tool for generating cloud diagrams from Terraform code.
 Go from this:
 
