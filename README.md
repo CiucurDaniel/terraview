@@ -16,13 +16,12 @@ To this:
 terraview print .\terraform_example\ --format png
 ```
 
-## GOALS
+## Current example of a generated diagram 
 
-- [x] parseaza graf terraform
-- [ ] sterge resursele care nu au sens sau nu fac parte din provider
-- [x] adauga label cu imaginea
-- [ ] modifica numele resurselor
-- [x] print graf in jpeg
+![Simple diagram](diagram_20240614_172636.png)
+
+
+# Development 
 
 ## Cobra-cli
 
@@ -42,9 +41,13 @@ go run main.go print .\terraform_example\
 dot -Tjpeg diagram.dot -o diagram.jpg
 ```
 
-## Current example of a generaed diagram 
+## GOALS
 
-![Simple diagram](diagram_20240614_172636.png)
+- [x] parseaza graf terraform
+- [ ] sterge resursele care nu au sens sau nu fac parte din provider
+- [x] adauga label cu imaginea
+- [ ] modifica numele resurselor
+- [x] print graf in jpeg
 
 ## TODOS
 
