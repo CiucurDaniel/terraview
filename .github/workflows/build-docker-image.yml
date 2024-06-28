@@ -4,7 +4,7 @@ name: Build Docker Image
 on:
   push: 
     branches:
-      - reset
+      - main
   workflow_dispatch:
 
 jobs:
