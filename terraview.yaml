@@ -1,0 +1,19 @@
+grouping_elements:
+  - azurerm_subnet
+  - azurerm_virtual_network
+  - azurerm_resource_group
+  # Add more elements as needed
+
+important_attributes:
+  - resource: azurerm_linux_virtual_machine
+    attributes:
+      - size
+  - resource: azurerm_subnet
+    attributes:
+      - address_prefixes
+  - resource: azurerm_virtual_network
+    attributes:
+      - address_space
+  - resource: azurerm_resource_group
+    attributes:
+      - location

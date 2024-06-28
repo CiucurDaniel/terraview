@@ -1,0 +1,17 @@
+digraph G {
+    // Define nodes
+    resource_group [label="Resource group"];
+
+// Define subgraph
+    subgraph cluster_virtual_network {
+label="Virtual Network";
+vm1 [label="VM 1"];
+vm2 [label="VM 2"];
+
+// Hidden node
+        hidden_node [style=invis, label=""];
+}
+
+// Define edges from resource_group to the hidden node
+    resource_group -> hidden_node [lhead=cluster_virtual_network, headport=n, tailport=s];
+}
