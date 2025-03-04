@@ -1,0 +1,57 @@
+ bradigraph G {
+    compound="true";
+    imagepath="D:\coding\GitHub\terraview-assets\icons\azurerm";
+    newrank="true";
+    nodesep="1.5";
+    pad="0.3";
+    rankdir="BT";
+    ranksep="1.5";
+    splines="true";  // Force straight edges
+
+    "azurerm_linux_virtual_machine.application_server"->"azurerm_network_interface.application_server_nic" [minlen=1];
+    "azurerm_network_interface.application_server_nic"->"azurerm_public_ip.server_public_ip" [minlen=1];
+    "azurerm_network_interface.application_server_nic"->"azurerm_subnet.internal" [minlen=1];
+    "azurerm_postgresql_server.orders_db_prod"->"azurerm_resource_group.online_shop_prod" [minlen=1];
+    "azurerm_public_ip.server_public_ip"->"azurerm_resource_group.online_shop_prod" [minlen=1];
+    "azurerm_subnet.internal"->"azurerm_virtual_network.online_shop_network_prod"[ style=invis, minlen=1 ];
+    "azurerm_virtual_network.online_shop_network_prod"->"azurerm_resource_group.online_shop_prod"[ style=invis, minlen=1 ];
+    subgraph "cluster_azurerm_resource_group.online_shop_prod" {
+    fontsize="28.0";
+    label="online_shop_prod
+location: westeurope";
+    labelloc="b";
+    margin="60";
+    "azurerm_postgresql_server.orders_db_prod" [ fontname="sans-serif", fontsize="22.0", image="azurerm_postgresql_server.png", label="orders_db_prod
+sku_name: B_Gen5_1\nversion: 10", labelloc="b", margin="1.50", shape="none" ];
+    "azurerm_public_ip.server_public_ip" [ fontname="sans-serif", fontsize="22.0", image="azurerm_public_ip.png", label="server_public_ip
+ip_address: 4.180.86.117", labelloc="b", margin="1.50", shape="none" ];
+    "azurerm_resource_group.online_shop_prod" [ fontname="sans-serif", fontsize="22.0", image="azurerm_resource_group.png", label="", labelloc="b", margin="1.50", shape="none" ];
+    subgraph "cluster_azurerm_virtual_network.online_shop_network_prod" {
+    fontsize="28.0";
+    label="online_shop_network_prod
+address_space: [10.0.0.0/16]";
+    labelloc="b";
+    margin="20";
+    "azurerm_virtual_network.online_shop_network_prod" [ fontname="sans-serif", fontsize="22.0", image="azurerm_virtual_network.png", label="", labelloc="b", margin="1.50", shape="none" ];
+    subgraph "cluster_azurerm_subnet.internal" {
+    fontsize="28.0";
+    label="internal
+address_prefixes: [10.0.2.0/24]";
+    labelloc="b";
+    margin="40";
+    "azurerm_linux_virtual_machine.application_server" [ fontname="sans-serif", fontsize="22.0", image="azurerm_linux_virtual_machine.png", label="application_server
+size: Standard_B1s", labelloc="b", margin="1.50", shape="none" ];
+    "azurerm_network_interface.application_server_nic" [ fontname="sans-serif", fontsize="22.0", image="azurerm_network_interface.png", label="application_server_nic", labelloc="b"
+    , margin="1.50", shape="none" ];
+    "azurerm_subnet.internal" [ fontname="sans-serif", fontsize="22.0", image="azurerm_subnet.png", label="", labelloc="b", margin="1.50", shape="none" ];
+
+    }
+    ;
+
+    }
+    ;
+
+    }
+    ;
+
+}
