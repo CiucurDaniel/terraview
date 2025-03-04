@@ -22,6 +22,8 @@ terraview print .\terraform_example\ --format png
 
 ![Second Simple diagram](diagram_9517784552.png)
 
+More examples can be seen in the `examples` directory.
+
 # Development 
 
 Useful commands for development only.
